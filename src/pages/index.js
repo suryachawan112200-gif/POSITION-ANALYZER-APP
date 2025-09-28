@@ -11,27 +11,16 @@ export default function Home() {
   const [entryPrice, setEntryPrice] = useState('');
   const [quantity, setQuantity] = useState('');
 
-  const switchTab = (tab) => {
-    setActiveTab(tab);
-  };
-
-  const selectMarket = (selected) => {
-    setMarket(selected);
-  };
-
-  const selectPositionType = (selected) => {
-    setPositionType(selected);
-  };
-
-  const handleFileChange = (e) => {
-    setFile(e.target.files[0]);
-  };
+  const switchTab = (tab) => setActiveTab(tab);
+  const selectMarket = (selected) => setMarket(selected);
+  const selectPositionType = (selected) => setPositionType(selected);
+  const handleFileChange = (e) => setFile(e.target.files[0]);
 
   const submitData = async (mode) => {
     let data;
     if (mode === 'upload') {
       if (!file) return alert('Please upload an image.');
-      data = { image: file.name }; // In real, use FormData
+      data = { image: file.name };
     } else {
       if (!coin || !entryPrice || !quantity) return alert('Please fill all fields.');
       data = {
@@ -42,15 +31,6 @@ export default function Home() {
         quantity: parseFloat(quantity),
       };
     }
-
-    // Placeholder for API call
-    // const response = await fetch('YOUR_API_ENDPOINT', {
-    //   method: 'POST',
-    //   body: mode === 'upload' ? new FormData().append('image', file) : JSON.stringify(data),
-    //   headers: mode === 'upload' ? {} : { 'Content-Type': 'application/json' },
-    // });
-    // const resultData = await response.json();
-    // setResult(resultData);
 
     // Simulate response
     const simulatedResponse = {
@@ -63,13 +43,10 @@ export default function Home() {
       profitability_comment: "Standard profit/loss.",
       market_trend: "sideways",
       trend_confidence: 70,
-      trend_comment: "Market moving sideways. Bullish patterns detected, extending target range and increasing confidence.",
+      trend_comment: "Market moving sideways. Bullish patterns detected.",
       support_levels: [0.02358, 0.02803, 0.02843, 0.03021, 0.03024, 0.03155],
       resistance_levels: [0.03267, 0.03333, 0.03415, 0.03565, 0.03617, 0.03838],
-      detected_patterns: {
-        candlesticks: [],
-        chart_patterns: ["Falling Wedge"]
-      },
+      detected_patterns: { candlesticks: [], chart_patterns: ["Falling Wedge"] },
       targets: [0.03267, 0.03333],
       stoplosses: [0.02358],
       confidence_level: 75
@@ -120,7 +97,7 @@ export default function Home() {
         )}
 
         {result && (
-          <div id="result" style={{ display: 'block' }}>
+          <div id="result" className="result">
             <h3>Analysis Results 📊</h3>
             <p><strong>Coin:</strong> {result.coin}</p>
             <p><strong>Market:</strong> {result.market.charAt(0).toUpperCase() + result.market.slice(1)}</p>
@@ -180,214 +157,6 @@ export default function Home() {
           <button>Subscribe</button>
         </div>
       </div>
-
-      <style jsx global>{`
-        /* Global Styles */
-        body {
-          margin: 0;
-          padding: 0;
-          font-family: 'Arial', sans-serif;
-          background: linear-gradient(to bottom, #001f3f, #003366);
-          color: white;
-          min-height: 100vh;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          overflow-x: hidden;
-        }
-
-        header {
-          width: 100%;
-          padding: 20px;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          background: rgba(0, 0, 0, 0.2);
-        }
-
-        .logo {
-          font-size: 24px;
-          font-weight: bold;
-          color: #00bfff;
-        }
-
-        .language-switcher {
-          background: none;
-          border: none;
-          color: white;
-          font-size: 16px;
-          cursor: pointer;
-        }
-
-        .main-box {
-          max-width: 600px;
-          width: 90%;
-          background: rgba(255, 255, 255, 0.1);
-          border-radius: 20px;
-          padding: 20px;
-          margin: 40px 0;
-          box-shadow: 0 0 20px rgba(0, 191, 255, 0.3);
-        }
-
-        .tabs {
-          display: flex;
-          justify-content: center;
-          margin-bottom: 20px;
-        }
-
-        .tab {
-          padding: 10px 20px;
-          background: rgba(255, 255, 255, 0.05);
-          border-radius: 10px 10px 0 0;
-          cursor: pointer;
-          margin-right: 10px;
-          transition: background 0.3s;
-        }
-
-        .tab.active {
-          background: rgba(0, 191, 255, 0.5);
-        }
-
-        .form-content {
-          display: block;
-        }
-
-        input, select {
-          width: 100%;
-          padding: 10px;
-          margin: 10px 0;
-          border-radius: 10px;
-          border: none;
-          background: rgba(255, 255, 255, 0.1);
-          color: white;
-        }
-
-        .slider-container {
-          display: flex;
-          justify-content: space-between;
-          margin: 10px 0;
-        }
-
-        .slider-option {
-          padding: 10px 20px;
-          background: rgba(255, 255, 255, 0.05);
-          border-radius: 10px;
-          cursor: pointer;
-          transition: background 0.3s;
-        }
-
-        .slider-option.active {
-          background: #00bfff;
-        }
-
-        button {
-          width: 100%;
-          padding: 15px;
-          background: linear-gradient(to right, #00bfff, #1e90ff);
-          border: none;
-          border-radius: 10px;
-          color: white;
-          font-weight: bold;
-          cursor: pointer;
-          transition: transform 0.3s, box-shadow 0.3s;
-        }
-
-        button:hover {
-          transform: scale(1.05);
-          box-shadow: 0 0 15px rgba(0, 191, 255, 0.5);
-        }
-
-        #result {
-          margin-top: 20px;
-          padding: 20px;
-          background: rgba(0, 0, 0, 0.3);
-          border-radius: 10px;
-          width: 100%;
-          max-width: 700px;
-        }
-
-        #result h3 {
-          margin-top: 0;
-          color: #00bfff;
-        }
-
-        #result p {
-          margin: 10px 0;
-        }
-
-        .levels-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-          gap: 10px;
-          margin-top: 10px;
-        }
-
-        .level-item {
-          background: rgba(255, 255, 255, 0.05);
-          padding: 5px;
-          border-radius: 5px;
-          text-align: center;
-        }
-
-        .instructions {
-          display: flex;
-          justify-content: space-around;
-          width: 90%;
-          max-width: 800px;
-          margin: 40px 0;
-        }
-
-        .step {
-          text-align: center;
-          padding: 20px;
-          background: rgba(255, 255, 255, 0.1);
-          border-radius: 10px;
-          width: 30%;
-          transition: transform 0.3s;
-        }
-
-        .step:hover {
-          transform: translateY(-10px);
-        }
-
-        .subscriptions {
-          display: flex;
-          justify-content: space-around;
-          width: 90%;
-          max-width: 800px;
-          margin-bottom: 40px;
-        }
-
-        .sub-card {
-          background: rgba(255, 255, 255, 0.1);
-          border-radius: 20px;
-          padding: 20px;
-          width: 40%;
-          text-align: center;
-          transition: transform 0.3s, box-shadow 0.3s;
-        }
-
-        .sub-card:hover {
-          transform: scale(1.05);
-          box-shadow: 0 0 20px rgba(0, 191, 255, 0.3);
-        }
-
-        @media (max-width: 768px) {
-          .instructions, .subscriptions {
-            flex-direction: column;
-            align-items: center;
-          }
-
-          .step, .sub-card {
-            width: 80%;
-            margin-bottom: 20px;
-          }
-
-          #result {
-            max-width: 90%;
-          }
-        }
-      `}</style>
     </>
   );
 }
