@@ -1,4 +1,8 @@
-// package.json
+
+#### 4. `package.json`
+Defines project metadata and dependencies.
+
+```json
 {
   "name": "position-analyzer",
   "version": "0.1.0",
