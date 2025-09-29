@@ -1,4 +1,3 @@
-// pages/index.js
 import { useState } from 'react';
 
 export default function Home() {
@@ -10,6 +9,11 @@ export default function Home() {
   const [coin, setCoin] = useState('');
   const [entryPrice, setEntryPrice] = useState('');
   const [quantity, setQuantity] = useState('');
+  const [error, setError] = useState(null);
+
+  // Hardcoded Binance API keys (commented out, for potential future use)
+  // const API_KEY = '3667744fdce537a164763cf22e77510b3a2a1159a97da6ba92a3eb1b5188470d';
+  // const API_SECRET = 'baca1443f0765a5c5104b14c3eefcb15d714eb41f9b6dcbee3b339863acb7821';
 
   const switchTab = (tab) => setActiveTab(tab);
   const selectMarket = (selected) => setMarket(selected);
@@ -17,10 +21,13 @@ export default function Home() {
   const handleFileChange = (e) => setFile(e.target.files[0]);
 
   const submitData = async (mode) => {
+    setResult(null);
+    setError(null);
+
     let data;
     if (mode === 'upload') {
       if (!file) return alert('Please upload an image.');
-      data = { image: file.name };
+      data = { image: file.name }; // Placeholder; backend needs image processing logic
     } else {
       if (!coin || !entryPrice || !quantity) return alert('Please fill all fields.');
       data = {
@@ -32,26 +39,24 @@ export default function Home() {
       };
     }
 
-    // Simulate response
-    const simulatedResponse = {
-      coin: "TRUUSDT",
-      market: "futures",
-      position_type: "long",
-      entry_price: 0.02735,
-      current_price: 0.02717,
-      profit_loss: "-0.1800 (-0.66%)",
-      profitability_comment: "Standard profit/loss.",
-      market_trend: "sideways",
-      trend_confidence: 70,
-      trend_comment: "Market moving sideways. Bullish patterns detected.",
-      support_levels: [0.02358, 0.02803, 0.02843, 0.03021, 0.03024, 0.03155],
-      resistance_levels: [0.03267, 0.03333, 0.03415, 0.03565, 0.03617, 0.03838],
-      detected_patterns: { candlesticks: [], chart_patterns: ["Falling Wedge"] },
-      targets: [0.03267, 0.03333],
-      stoplosses: [0.02358],
-      confidence_level: 75
-    };
-    setResult(simulatedResponse);
+    try {
+      const response = await fetch('https://python-backend-eo1wtonbd-vishals-projects-c3cd8a6a.vercel.app/analyze', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+
+      const resultData = await response.json();
+      setResult(resultData);
+    } catch (err) {
+      setError(err.message);
+    }
   };
 
   return (
@@ -67,8 +72,12 @@ export default function Home() {
 
       <div className="main-box">
         <div className="tabs">
-          <div className={`tab ${activeTab === 'upload' ? 'active' : ''}`} onClick={() => switchTab('upload')}>Upload Position Image</div>
-          <div className={`tab ${activeTab === 'enter' ? 'active' : ''}`} onClick={() => switchTab('enter')}>Enter Position Details</div>
+          <div className={`tab ${activeTab === 'upload' ? 'active' : ''}`} onClick={() => switchTab('upload')}>
+            Upload Position Image
+          </div>
+          <div className={`tab ${activeTab === 'enter' ? 'active' : ''}`} onClick={() => switchTab('enter')}>
+            Enter Position Details
+          </div>
         </div>
 
         {activeTab === 'upload' && (
@@ -80,22 +89,63 @@ export default function Home() {
 
         {activeTab === 'enter' && (
           <div className="form-content active">
-            <input type="text" placeholder="Coin" value={coin} onChange={(e) => setCoin(e.target.value)} />
+            <input
+              type="text"
+              placeholder="Coin"
+              value={coin}
+              onChange={(e) => setCoin(e.target.value)}
+            />
             <div className="slider-container">
-              <div className={`slider-option ${market === 'Futures' ? 'active' : ''}`} onClick={() => selectMarket('Futures')}>Futures</div>
-              <div className={`slider-option ${market === 'Spot' ? 'active' : ''}`} onClick={() => selectMarket('Spot')}>Spot</div>
-              <div className={`slider-option ${market === 'Crypto' ? 'active' : ''}`} onClick={() => selectMarket('Crypto')}>Crypto</div>
+              <div
+                className={`slider-option ${market === 'Futures' ? 'active' : ''}`}
+                onClick={() => selectMarket('Futures')}
+              >
+                Futures
+              </div>
+              <div
+                className={`slider-option ${market === 'Spot' ? 'active' : ''}`}
+                onClick={() => selectMarket('Spot')}
+              >
+                Spot
+              </div>
+              <div
+                className={`slider-option ${market === 'Crypto' ? 'active' : ''}`}
+                onClick={() => selectMarket('Crypto')}
+              >
+                Crypto
+              </div>
             </div>
             <div className="slider-container">
-              <div className={`slider-option ${positionType === 'Long' ? 'active' : ''}`} onClick={() => selectPositionType('Long')}>Long</div>
-              <div className={`slider-option ${positionType === 'Short' ? 'active' : ''}`} onClick={() => selectPositionType('Short')}>Short</div>
+              <div
+                className={`slider-option ${positionType === 'Long' ? 'active' : ''}`}
+                onClick={() => selectPositionType('Long')}
+              >
+                Long
+              </div>
+              <div
+                className={`slider-option ${positionType === 'Short' ? 'active' : ''}`}
+                onClick={() => selectPositionType('Short')}
+              >
+                Short
+              </div>
             </div>
-            <input type="number" placeholder="Entry Price" value={entryPrice} onChange={(e) => setEntryPrice(e.target.value)} />
-            <input type="number" placeholder="Quantity" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
+            <input
+              type="number"
+              placeholder="Entry Price"
+              value={entryPrice}
+              onChange={(e) => setEntryPrice(e.target.value)}
+            />
+            <input
+              type="number"
+              placeholder="Quantity"
+              value={quantity}
+              onChange={(e) => setQuantity(e.target.value)}
+            />
             <button onClick={() => submitData('enter')}>Analyze</button>
           </div>
         )}
 
+        {error && <p style={{ color: 'red' }}>Error: {error}</p>}
         {result && (
           <div id="result" className="result">
             <h3>Analysis Results 📊</h3>
@@ -110,20 +160,28 @@ export default function Home() {
             <p><strong>Trend Comment:</strong> {result.trend_comment}</p>
             <h4>Support Levels:</h4>
             <div className="levels-grid">
-              {result.support_levels.map((level, idx) => <div key={idx} className="level-item">${level.toFixed(5)}</div>)}
+              {result.support_levels.map((level, idx) => (
+                <div key={idx} className="level-item">${level.toFixed(5)}</div>
+              ))}
             </div>
             <h4>Resistance Levels:</h4>
             <div className="levels-grid">
-              {result.resistance_levels.map((level, idx) => <div key={idx} className="level-item">${level.toFixed(5)}</div>)}
+              {result.resistance_levels.map((level, idx) => (
+                <div key={idx} className="level-item">${level.toFixed(5)}</div>
+              ))}
             </div>
             <p><strong>Detected Patterns:</strong> {result.detected_patterns.chart_patterns.join(', ') || 'None'}</p>
             <h4>Targets:</h4>
             <div className="levels-grid">
-              {result.targets.map((target, idx) => <div key={idx} className="level-item">${target.toFixed(5)}</div>)}
+              {result.targets.map((target, idx) => (
+                <div key={idx} className="level-item">${target.toFixed(5)}</div>
+              ))}
             </div>
             <h4>Stop Losses:</h4>
             <div className="levels-grid">
-              {result.stoplosses.map((sl, idx) => <div key={idx} className="level-item">${sl.toFixed(5)}</div>)}
+              {result.stoplosses.map((sl, idx) => (
+                <div key={idx} className="level-item">${sl.toFixed(5)}</div>
+              ))}
             </div>
             <p><strong>Confidence Level:</strong> {result.confidence_level}%</p>
           </div>
