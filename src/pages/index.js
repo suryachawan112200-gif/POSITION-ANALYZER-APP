@@ -11,10 +11,6 @@ export default function Home() {
   const [quantity, setQuantity] = useState('');
   const [error, setError] = useState(null);
 
-  // Hardcoded Binance API keys (commented out, for potential future use)
-  // const API_KEY = '3667744fdce537a164763cf22e77510b3a2a1159a97da6ba92a3eb1b5188470d';
-  // const API_SECRET = 'baca1443f0765a5c5104b14c3eefcb15d714eb41f9b6dcbee3b339863acb7821';
-
   const switchTab = (tab) => setActiveTab(tab);
   const selectMarket = (selected) => setMarket(selected);
   const selectPositionType = (selected) => setPositionType(selected);
@@ -27,7 +23,8 @@ export default function Home() {
     let data;
     if (mode === 'upload') {
       if (!file) return alert('Please upload an image.');
-      data = { image: file.name }; // Placeholder; backend needs image processing logic
+      // Note: Backend doesn't support image upload yet. This is a placeholder.
+      data = { image: file.name };
     } else {
       if (!coin || !entryPrice || !quantity) return alert('Please fill all fields.');
       data = {
@@ -40,7 +37,7 @@ export default function Home() {
     }
 
     try {
-      const response = await fetch('python-backend-dy8dtr5yl-vishals-projects-c3cd8a6a.vercel.app', {
+      const response = await fetch('https://python-backend-dy8dtr5yl-vishals-projects-c3cd8a6a.vercel.app/analyze', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -170,7 +167,7 @@ export default function Home() {
                 <div key={idx} className="level-item">${level.toFixed(5)}</div>
               ))}
             </div>
-            <p><strong>Detected Patterns:</strong> {result.detected_patterns.chart_patterns.join(', ') || 'None'}</p>
+            <p><strong>Detected Patterns:</strong> {result.detected_patterns?.chart_patterns?.join(', ') || 'None'}</p>
             <h4>Targets:</h4>
             <div className="levels-grid">
               {result.targets.map((target, idx) => (
@@ -179,9 +176,10 @@ export default function Home() {
             </div>
             <h4>Stop Losses:</h4>
             <div className="levels-grid">
-              {result.stoplosses.map((sl, idx) => (
+              {result.market_stoplosses.map((sl, idx) => (  // Changed from stoplosses to market_stoplosses
                 <div key={idx} className="level-item">${sl.toFixed(5)}</div>
               ))}
+              <p><strong>User Stop Loss:</strong> ${result.user_stoploss.toFixed(5)}</p>
             </div>
             <p><strong>Confidence Level:</strong> {result.confidence_level}%</p>
           </div>
