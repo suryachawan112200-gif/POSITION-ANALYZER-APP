@@ -40,7 +40,7 @@ export default function Home() {
     }
 
     try {
-      const response = await fetch('https://python-backend-eo1wtonbd-vishals-projects-c3cd8a6a.vercel.app/analyze', {
+      const response = await fetch('python-backend-dy8dtr5yl-vishals-projects-c3cd8a6a.vercel.app', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
