@@ -30,18 +30,17 @@ export default function Home() {
       data = {
         coin,
         market: market.toLowerCase(),
-        position_type: positionType.toLowerCase(), // Changed from positionType to position_type
+        position_type: positionType.toLowerCase(),
         entry_price: parseFloat(entryPrice),
         quantity: parseFloat(quantity),
       };
     }
 
     try {
-      const response = await fetch('https://python-backend-pr.vercel.app/analyze', { // Updated URL
+      const response = await fetch('https://python-backend-pr.vercel.app/analyze', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Origin': 'https://position-analyzer-app.vercel.app', // Added for CORS
         },
         body: JSON.stringify(data),
       });
