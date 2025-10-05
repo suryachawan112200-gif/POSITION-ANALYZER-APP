@@ -57,162 +57,178 @@ export default function Home() {
   };
 
   return (
-    <>
-      <header>
-        <div className="logo">Position Analyzer</div>
-        <select className="language-switcher">
-          <option>Eng</option>
-          <option>Esp</option>
-          <option>Fra</option>
-        </select>
-      </header>
+    <div className="min-h-screen flex justify-center">
+      <div className="w-full max-w-4xl">
+        {/* Header */}
+        <header className="flex justify-between items-center p-4">
+          <div className="logo">Position Analyzer</div>
+          <select className="language-switcher">
+            <option>Eng</option>
+            <option>Esp</option>
+            <option>Fra</option>
+          </select>
+        </header>
 
-      <div className="main-box">
-        <div className="tabs">
-          <div className={`tab ${activeTab === 'upload' ? 'active' : ''}`} onClick={() => switchTab('upload')}>
-            Upload Position Image
+        {/* Hero Section */}
+        <div className="text-center p-6">
+          <h1>AI-Powered Position Analyzer for Traders 🚀</h1>
+          <p>
+            Upload your trade screenshot or enter details — get instant AI-driven targets, stop-loss, trend insights, and premium decay analysis.
+          </p>
+        </div>
+
+        <div className="main-box">
+          <div className="tabs">
+            <div className={`tab ${activeTab === 'upload' ? 'active' : ''}`} onClick={() => switchTab('upload')}>
+              Upload Position Image
+            </div>
+            <div className={`tab ${activeTab === 'enter' ? 'active' : ''}`} onClick={() => switchTab('enter')}>
+              Enter Position Details
+            </div>
           </div>
-          <div className={`tab ${activeTab === 'enter' ? 'active' : ''}`} onClick={() => switchTab('enter')}>
-            Enter Position Details
+
+          {activeTab === 'upload' && (
+            <div className="form-content active">
+              <input type="file" accept="image/*" onChange={handleFileChange} />
+              <button onClick={() => submitData('upload')}>Upload</button>
+            </div>
+          )}
+
+          {activeTab === 'enter' && (
+            <div className="form-content active">
+              <input
+                type="text"
+                placeholder="Coin"
+                value={coin}
+                onChange={(e) => setCoin(e.target.value)}
+              />
+              <div className="slider-container">
+                <div
+                  className={`slider-option ${market === 'Futures' ? 'active' : ''}`}
+                  onClick={() => selectMarket('Futures')}
+                >
+                  Futures
+                </div>
+                <div
+                  className={`slider-option ${market === 'Spot' ? 'active' : ''}`}
+                  onClick={() => selectMarket('Spot')}
+                >
+                  Spot
+                </div>
+                <div
+                  className={`slider-option ${market === 'Crypto' ? 'active' : ''}`}
+                  onClick={() => selectMarket('Crypto')}
+                >
+                  Crypto
+                </div>
+              </div>
+              <div className="slider-container">
+                <div
+                  className={`slider-option ${positionType === 'Long' ? 'active' : ''}`}
+                  onClick={() => selectPositionType('Long')}
+                >
+                  Long
+                </div>
+                <div
+                  className={`slider-option ${positionType === 'Short' ? 'active' : ''}`}
+                  onClick={() => selectPositionType('Short')}
+                >
+                  Short
+                </div>
+              </div>
+              <input
+                type="number"
+                placeholder="Entry Price"
+                value={entryPrice}
+                onChange={(e) => setEntryPrice(e.target.value)}
+              />
+              <input
+                type="number"
+                placeholder="Quantity"
+                value={quantity}
+                onChange={(e) => setQuantity(e.target.value)}
+              />
+              <button onClick={() => submitData('enter')}>Analyze</button>
+            </div>
+          )}
+
+          {error && <p style={{ color: 'red' }}>Error: {error}</p>}
+          {result && (
+            <div id="result" className="result">
+              <h3>Analysis Results 📊</h3>
+              <p><strong>Coin:</strong> {result.coin}</p>
+              <p><strong>Market:</strong> {result.market.charAt(0).toUpperCase() + result.market.slice(1)}</p>
+              <p><strong>Position Type:</strong> {result.position_type.charAt(0).toUpperCase() + result.position_type.slice(1)}</p>
+              <p><strong>Entry Price:</strong> ${result.entry_price.toFixed(5)}</p>
+              <p><strong>Current Price:</strong> ${result.current_price.toFixed(5)}</p>
+              <p><strong>Profit/Loss:</strong> {result.profit_loss} 💰</p>
+              <p><strong>Profitability Comment:</strong> {result.profitability_comment}</p>
+              <p><strong>Market Trend:</strong> {result.market_trend.charAt(0).toUpperCase() + result.market_trend.slice(1)} (Confidence: {result.trend_confidence}%)</p>
+              <p><strong>Trend Comment:</strong> {result.trend_comment}</p>
+              <h4>Support Levels:</h4>
+              <div className="levels-grid">
+                {result.support_levels.map((level, idx) => (
+                  <div key={idx} className="level-item">${level.toFixed(5)}</div>
+                ))}
+              </div>
+              <h4>Resistance Levels:</h4>
+              <div className="levels-grid">
+                {result.resistance_levels.map((level, idx) => (
+                  <div key={idx} className="level-item">${level.toFixed(5)}</div>
+                ))}
+              </div>
+              <p><strong>Detected Patterns:</strong> {result.detected_patterns?.chart_patterns?.join(', ') || 'None'}</p>
+              <h4>Targets:</h4>
+              <div className="levels-grid">
+                {result.targets.map((target, idx) => (
+                  <div key={idx} className="level-item">${target.toFixed(5)}</div>
+                ))}
+              </div>
+              <h4>Stop Losses:</h4>
+              <div className="levels-grid">
+                {result.market_stoplosses.map((sl, idx) => (
+                  <div key={idx} className="level-item">${sl.toFixed(5)}</div>
+                ))}
+                <p><strong>User Stop Loss:</strong> ${result.user_stoploss.toFixed(5)}</p>
+              </div>
+              <p><strong>Confidence Level:</strong> {result.confidence_level}%</p>
+            </div>
+          )}
+        </div>
+
+        <div className="instructions">
+          <div className="step">
+            <h3>1. Choose Input Method</h3>
+            <p>Select upload or enter details.</p>
+          </div>
+          <div className="step">
+            <h3>2. Upload/Enter Details</h3>
+            <p>Provide your position info.</p>
+          </div>
+          <div className="step">
+            <h3>3. View Analysis Results</h3>
+            <p>See profit/loss and more.</p>
           </div>
         </div>
 
-        {activeTab === 'upload' && (
-          <div className="form-content active">
-            <input type="file" accept="image/*" onChange={handleFileChange} />
-            <button onClick={() => submitData('upload')}>Upload</button>
+        <div className="subscriptions">
+          <div className="sub-card">
+            <h3>Basic Plan</h3>
+            <p>$9.99/month</p>
+            <button>Subscribe</button>
           </div>
-        )}
+          <div className="sub-card">
+            <h3>Pro Plan</h3>
+            <p>$19.99/month</p>
+            <button>Subscribe</button>
+          </div>
+        </div>
 
-        {activeTab === 'enter' && (
-          <div className="form-content active">
-            <input
-              type="text"
-              placeholder="Coin"
-              value={coin}
-              onChange={(e) => setCoin(e.target.value)}
-            />
-            <div className="slider-container">
-              <div
-                className={`slider-option ${market === 'Futures' ? 'active' : ''}`}
-                onClick={() => selectMarket('Futures')}
-              >
-                Futures
-              </div>
-              <div
-                className={`slider-option ${market === 'Spot' ? 'active' : ''}`}
-                onClick={() => selectMarket('Spot')}
-              >
-                Spot
-              </div>
-              <div
-                className={`slider-option ${market === 'Crypto' ? 'active' : ''}`}
-                onClick={() => selectMarket('Crypto')}
-              >
-                Crypto
-              </div>
-            </div>
-            <div className="slider-container">
-              <div
-                className={`slider-option ${positionType === 'Long' ? 'active' : ''}`}
-                onClick={() => selectPositionType('Long')}
-              >
-                Long
-              </div>
-              <div
-                className={`slider-option ${positionType === 'Short' ? 'active' : ''}`}
-                onClick={() => selectPositionType('Short')}
-              >
-                Short
-              </div>
-            </div>
-            <input
-              type="number"
-              placeholder="Entry Price"
-              value={entryPrice}
-              onChange={(e) => setEntryPrice(e.target.value)}
-            />
-            <input
-              type="number"
-              placeholder="Quantity"
-              value={quantity}
-              onChange={(e) => setQuantity(e.target.value)}
-            />
-            <button onClick={() => submitData('enter')}>Analyze</button>
-          </div>
-        )}
-
-        {error && <p style={{ color: 'red' }}>Error: {error}</p>}
-        {result && (
-          <div id="result" className="result">
-            <h3>Analysis Results 📊</h3>
-            <p><strong>Coin:</strong> {result.coin}</p>
-            <p><strong>Market:</strong> {result.market.charAt(0).toUpperCase() + result.market.slice(1)}</p>
-            <p><strong>Position Type:</strong> {result.position_type.charAt(0).toUpperCase() + result.position_type.slice(1)}</p>
-            <p><strong>Entry Price:</strong> ${result.entry_price.toFixed(5)}</p>
-            <p><strong>Current Price:</strong> ${result.current_price.toFixed(5)}</p>
-            <p><strong>Profit/Loss:</strong> {result.profit_loss} 💰</p>
-            <p><strong>Profitability Comment:</strong> {result.profitability_comment}</p>
-            <p><strong>Market Trend:</strong> {result.market_trend.charAt(0).toUpperCase() + result.market_trend.slice(1)} (Confidence: {result.trend_confidence}%)</p>
-            <p><strong>Trend Comment:</strong> {result.trend_comment}</p>
-            <h4>Support Levels:</h4>
-            <div className="levels-grid">
-              {result.support_levels.map((level, idx) => (
-                <div key={idx} className="level-item">${level.toFixed(5)}</div>
-              ))}
-            </div>
-            <h4>Resistance Levels:</h4>
-            <div className="levels-grid">
-              {result.resistance_levels.map((level, idx) => (
-                <div key={idx} className="level-item">${level.toFixed(5)}</div>
-              ))}
-            </div>
-            <p><strong>Detected Patterns:</strong> {result.detected_patterns?.chart_patterns?.join(', ') || 'None'}</p>
-            <h4>Targets:</h4>
-            <div className="levels-grid">
-              {result.targets.map((target, idx) => (
-                <div key={idx} className="level-item">${target.toFixed(5)}</div>
-              ))}
-            </div>
-            <h4>Stop Losses:</h4>
-            <div className="levels-grid">
-              {result.market_stoplosses.map((sl, idx) => (  // Changed from stoplosses to market_stoplosses
-                <div key={idx} className="level-item">${sl.toFixed(5)}</div>
-              ))}
-              <p><strong>User Stop Loss:</strong> ${result.user_stoploss.toFixed(5)}</p>
-            </div>
-            <p><strong>Confidence Level:</strong> {result.confidence_level}%</p>
-          </div>
-        )}
+        {/* Footer with Privacy Policy and Contact Details */}
+        <footer className="text-center p-4">
+          <p>© 2025 Position Analyzer | <a href="#">Privacy Policy</a> | <a href="#">Contact Support</a></p>
+        </footer>
       </div>
-
-      <div className="instructions">
-        <div className="step">
-          <h3>1. Choose Input Method</h3>
-          <p>Select upload or enter details.</p>
-        </div>
-        <div className="step">
-          <h3>2. Upload/Enter Details</h3>
-          <p>Provide your position info.</p>
-        </div>
-        <div className="step">
-          <h3>3. View Analysis Results</h3>
-          <p>See profit/loss and more.</p>
-        </div>
-      </div>
-
-      <div className="subscriptions">
-        <div className="sub-card">
-          <h3>Basic Plan</h3>
-          <p>$9.99/month</p>
-          <button>Subscribe</button>
-        </div>
-        <div className="sub-card">
-          <h3>Pro Plan</h3>
-          <p>$19.99/month</p>
-          <button>Subscribe</button>
-        </div>
-      </div>
-    </>
+    </div>
   );
 }
