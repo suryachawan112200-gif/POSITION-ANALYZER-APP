@@ -1,23 +1,26 @@
 // pages/index.js
-"use client"; // <--- FIX: Marks this component as a client component
+"use client"; // ESSENTIAL FIX for using React Hooks (useState, useContext) in Next.js
 
 import { useState, useContext } from 'react';
 import { AuthContext } from './AuthContext';
-import { Link } from 'react-router-dom';
+// FIX: Using Next.js built-in Link component instead of react-router-dom
+import Link from 'next/link'; 
 
 export default function Home() {
     const { user, canAnalyze, incrementAnalysisCount } = useContext(AuthContext);
     
-    // NEW STATE for Asset Class
+    // Asset Class State
     const [assetClass, setAssetClass] = useState('crypto'); // 'crypto' or 'forex'
     
-    // Market state now depends on assetClass
+    // Input States
     const [market, setMarket] = useState('Futures'); // 'Futures', 'Spot', or 'Forex'
     const [positionType, setPositionType] = useState('Long');
-    const [result, setResult] = useState(null);
     const [coin, setCoin] = useState('');
     const [entryPrice, setEntryPrice] = useState('');
     const [quantity, setQuantity] = useState('');
+
+    // Response States
+    const [result, setResult] = useState(null);
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(false); // NEW loading state
 
@@ -46,14 +49,8 @@ export default function Home() {
         if (!coin || !entryPrice || !quantity) return alert('Please fill all fields.');
         
         // Determine the market value to send to the backend
-        let marketToSend = '';
-        if (assetClass === 'forex') {
-            marketToSend = 'forex';
-        } else {
-            marketToSend = market.toLowerCase();
-        }
+        let marketToSend = assetClass === 'forex' ? 'forex' : market.toLowerCase();
 
-        // JSON Payload updated to include 'asset_class'
         const data = {
             asset_class: assetClass, // 'crypto' or 'forex'
             coin: coin.toUpperCase(),
@@ -63,8 +60,6 @@ export default function Home() {
             quantity: parseFloat(quantity),
         };
         
-        console.log("Sending JSON to backend:", data);
-
         setLoading(true);
 
         try {
@@ -78,7 +73,8 @@ export default function Home() {
 
             if (!response.ok) {
                 const errorDetail = await response.text();
-                throw new Error(`HTTP error! Status: ${response.status}. Details: ${errorDetail}`);
+                // Throw an error with backend details if available
+                throw new Error(`HTTP error! Status: ${response.status}. Details: ${errorDetail.substring(0, 100)}...`);
             }
 
             const resultData = await response.json();
@@ -114,7 +110,8 @@ export default function Home() {
             return (
                 <div 
                     className={`slider-option ${market === 'Forex' ? 'active' : ''}`}
-                    onClick={() => selectMarket('Forex')}
+                    // Market is forced to 'Forex' but this element allows click/styling
+                    onClick={() => selectMarket('Forex')} 
                 >
                     Forex
                 </div>
@@ -133,14 +130,15 @@ export default function Home() {
                     <option>Esp</option>
                     <option>Fra</option>
                 </select>
-                <Link to={user ? '/profile' : '/login'}>
+                {/* FIX: Changed <Link to={...} to <Link href={...} */}
+                <Link href={user ? '/profile' : '/login'}> 
                     <div className="profile-icon">👤</div>
                 </Link>
             </header>
 
             <div className="main-box">
                 <div className="form-content active">
-                    {/* NEW: Asset Class Selector */}
+                    {/* Asset Class Selector */}
                     <label className="input-label">Choose Asset Class:</label>
                     <div className="slider-container asset-selector">
                         <div 
@@ -213,25 +211,24 @@ export default function Home() {
                         <p><strong>Market:</strong> {result.market.charAt(0).toUpperCase() + result.market.slice(1)}</p>
                         <p><strong>Position Type:</strong> {result.position_type.charAt(0).toUpperCase() + result.position_type.slice(1)}</p>
                         <hr/>
-                        <p><strong>Entry Price:</strong> ${result.entry_price.toFixed(5)}</p>
-                        <p><strong>Current Price:</strong> ${result.current_price.toFixed(5)}</p>
+                        <p><strong>Entry Price:</strong> ${result.entry_price?.toFixed(5)}</p>
+                        <p><strong>Current Price:</strong> ${result.current_price?.toFixed(5)}</p>
                         <p><strong>Profit/Loss:</strong> {result.profit_loss || 'N/A'} 💰</p>
                         <p><strong>Profitability Comment:</strong> {result.profitability_comment || 'No comment provided.'}</p>
                         <hr/>
-                        <p><strong>Market Trend:</strong> {result.market_trend.charAt(0).toUpperCase() + result.market_trend.slice(1)} (Confidence: {result.trend_confidence}%)</p>
+                        <p><strong>Market Trend:</strong> {result.market_trend?.charAt(0).toUpperCase() + result.market_trend?.slice(1)} (Confidence: {result.trend_confidence}%)</p>
                         <p><strong>Trend Comment:</strong> {result.trend_comment}</p>
                         
-                        {/* Enhanced Levels Display */}
                         <h4>Support Levels (SL Area):</h4>
                         <div className="levels-grid support-grid">
                             {result.support_levels?.map((level, idx) => (
-                                <div key={idx} className="level-item support-item">${level.toFixed(5)}</div>
+                                <div key={idx} className="level-item support-item">${level?.toFixed(5)}</div>
                             ))}
                         </div>
                         <h4>Resistance Levels (TGT Area):</h4>
                         <div className="levels-grid resistance-grid">
                             {result.resistance_levels?.map((level, idx) => (
-                                <div key={idx} className="level-item resistance-item">${level.toFixed(5)}</div>
+                                <div key={idx} className="level-item resistance-item">${level?.toFixed(5)}</div>
                             ))}
                         </div>
                         
@@ -240,13 +237,13 @@ export default function Home() {
                         <h4>Suggested Targets:</h4>
                         <div className="levels-grid">
                             {result.targets?.map((target, idx) => (
-                                <div key={idx} className="level-item target-item">${target.toFixed(5)}</div>
+                                <div key={idx} className="level-item target-item">${target?.toFixed(5)}</div>
                             ))}
                         </div>
                         <h4>Suggested Stop Losses:</h4>
                         <div className="levels-grid">
                             {result.market_stoplosses?.map((sl, idx) => (
-                                <div key={idx} className="level-item stoploss-item">${sl.toFixed(5)}</div>
+                                <div key={idx} className="level-item stoploss-item">${sl?.toFixed(5)}</div>
                             ))}
                         </div>
                         
@@ -275,7 +272,8 @@ export default function Home() {
                 <div className="sub-card">
                     <h3>Premium Subscription</h3>
                     <p>$29.99 / 30 days</p>
-                    <Link to="/subscription"><button>Buy Now</button></Link>
+                    {/* FIX: Changed <Link to="/subscription" to <Link href="/subscription" */}
+                    <Link href="/subscription"><button>Buy Now</button></Link>
                 </div>
             </div>
             
@@ -285,9 +283,8 @@ export default function Home() {
                     margin: 0;
                     padding: 0;
                     font-family: 'Inter', sans-serif;
-                    /* New Gradient: Dark Blue to Deep Black */
                     background: linear-gradient(to bottom, #00122e, #000000); 
-                    color: #e0f7fa; /* Light Cyan for text */
+                    color: #e0f7fa;
                     min-height: 100vh;
                     display: flex;
                     flex-direction: column;
@@ -317,7 +314,7 @@ export default function Home() {
                 .logo {
                     font-size: 28px;
                     font-weight: 700;
-                    color: #00e5ff; /* Neon Blue */
+                    color: #00e5ff;
                     letter-spacing: 1px;
                 }
 
@@ -334,12 +331,11 @@ export default function Home() {
                 .main-box {
                     max-width: 650px;
                     width: 90%;
-                    /* Main Card Background */
                     background: rgba(0, 50, 80, 0.3); 
                     border-radius: 20px;
                     padding: 30px;
                     margin: 40px 0;
-                    box-shadow: 0 0 30px rgba(0, 229, 255, 0.4); /* Neon Blue shadow glow */
+                    box-shadow: 0 0 30px rgba(0, 229, 255, 0.4);
                 }
                 
                 .input-label {
@@ -347,7 +343,7 @@ export default function Home() {
                     margin-top: 15px;
                     margin-bottom: 5px;
                     font-weight: bold;
-                    color: #79a1f2; /* Lighter blue label */
+                    color: #79a1f2;
                     font-size: 0.9em;
                 }
 
@@ -356,7 +352,7 @@ export default function Home() {
                     padding: 12px;
                     margin: 10px 0;
                     border-radius: 10px;
-                    border: 1px solid #00e5ff; /* Neon Blue border */
+                    border: 1px solid #00e5ff;
                     background: rgba(0, 0, 0, 0.5);
                     color: white;
                     box-shadow: inset 0 1px 5px rgba(0, 229, 255, 0.2);
@@ -381,7 +377,7 @@ export default function Home() {
                 }
 
                 .slider-option.active {
-                    background: #00e5ff; /* Neon Blue active */
+                    background: #00e5ff;
                     color: #00122e;
                     font-weight: bold;
                     box-shadow: 0 0 10px #00e5ff;
@@ -394,7 +390,6 @@ export default function Home() {
                 button {
                     width: 100%;
                     padding: 15px;
-                    /* Button Gradient: Strong Blue */
                     background: linear-gradient(to right, #008cff, #0056e6); 
                     border: none;
                     border-radius: 10px;
@@ -445,7 +440,7 @@ export default function Home() {
 
                 #result h3, #result h4 {
                     margin-top: 0;
-                    color: #00e5ff; /* Cyan headings */
+                    color: #00e5ff;
                     border-bottom: 1px solid rgba(0, 229, 255, 0.3);
                     padding-bottom: 5px;
                     margin-bottom: 15px;
@@ -471,8 +466,8 @@ export default function Home() {
                     font-size: 0.9em;
                 }
                 
-                .resistance-item { border: 1px solid #ff4d4d; color: #ff4d4d; } /* Red for Resistance/TGT */
-                .support-item { border: 1px solid #00ff7f; color: #00ff7f; } /* Neon Green for Support/SL */
+                .resistance-item { border: 1px solid #ff4d4d; color: #ff4d4d; }
+                .support-item { border: 1px solid #00ff7f; color: #00ff7f; }
                 .target-item { background: #00e5ff33; border: 1px solid #00e5ff; } 
                 .stoploss-item { background: #ff4d4d33; border: 1px solid #ff4d4d; } 
 
