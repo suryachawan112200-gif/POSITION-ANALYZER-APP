@@ -1,11 +1,8 @@
 // src/pages/index.js
-"use client"; // Note: This is unnecessary for Pages Router, so we'll remove it
-
 import { useState } from "react";
 import Link from "next/link";
 
 export default function Home() {
-  // Asset Class State
   const [assetClass, setAssetClass] = useState("crypto");
   const [market, setMarket] = useState("Futures");
   const [positionType, setPositionType] = useState("Long");
@@ -53,6 +50,8 @@ export default function Home() {
 
     try {
       const response = await fetch(
+        // Use proxy for testing if backend CORS isn't fixed
+        // "/api/analyze",
         process.env.NEXT_PUBLIC_BACKEND_URL || "https://python-backend-pr.vercel.app/analyze",
         {
           method: "POST",
@@ -190,14 +189,14 @@ export default function Home() {
           <div id="result" className="result">
             <h3>Analysis Results 📊</h3>
             <p>
-              <strong>Asset:</strong> {result.coin} ({result.asset_class.toUpperCase()})
+              <strong>Asset:</strong> {result.coin} ({result.asset_class?.toUpperCase()})
             </p>
             <p>
-              <strong>Market:</strong> {result.market.charAt(0).toUpperCase() + result.market.slice(1)}
+              <strong>Market:</strong> {result.market?.charAt(0).toUpperCase() + result.market?.slice(1)}
             </p>
             <p>
               <strong>Position Type:</strong>{" "}
-              {result.position_type.charAt(0).toUpperCase() + result.position_type.slice(1)}
+              {result.position_type?.charAt(0).toUpperCase() + result.position_type?.slice(1)}
             </p>
             <hr />
             <p>
@@ -220,7 +219,7 @@ export default function Home() {
               {result.trend_confidence}%)
             </p>
             <p>
-              <strong>Trend Comment:</strong> {result.trend_comment}
+              <strong>Trend Comment:</strong> {result.trend_comment || "No comment provided."}
             </p>
 
             <h4>Support Levels (SL Area):</h4>
@@ -277,11 +276,11 @@ export default function Home() {
       <div className="instructions">
         <div className="step">
           <h3>1. Choose & Enter</h3>
-          <p>Select **Asset Class** and fill details.</p>
+          <p>Select <strong>Asset Class</strong> and fill details.</p>
         </div>
         <div className="step">
           <h3>2. Get Analysis</h3>
-          <p>Click the **Analyze** button.</p>
+          <p>Click the <strong>Analyze</strong> button.</p>
         </div>
         <div className="step">
           <h3>3. Results</h3>
