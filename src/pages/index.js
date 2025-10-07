@@ -1,13 +1,10 @@
-// pages/index.js
-"use client";
+// src/pages/index.js
+"use client"; // Note: This is unnecessary for Pages Router, so we'll remove it
 
-import { useState, useContext } from "react";
-import { AuthContext } from "./AuthContext";
+import { useState } from "react";
 import Link from "next/link";
 
 export default function Home() {
-  const { user, canAnalyze, incrementAnalysisCount } = useContext(AuthContext);
-
   // Asset Class State
   const [assetClass, setAssetClass] = useState("crypto");
   const [market, setMarket] = useState("Futures");
@@ -31,10 +28,6 @@ export default function Home() {
   const submitData = async () => {
     setResult(null);
     setError(null);
-
-    if (!canAnalyze()) {
-      return alert("You have used your 2 free analyses. Please login and subscribe for more.");
-    }
 
     if (!coin || !entryPrice || !quantity) {
       return alert("Please fill all fields.");
@@ -77,7 +70,6 @@ export default function Home() {
 
       const resultData = await response.json();
       setResult(resultData);
-      incrementAnalysisCount();
     } catch (err) {
       setError(err.message);
     } finally {
@@ -125,7 +117,7 @@ export default function Home() {
           <option>Esp</option>
           <option>Fra</option>
         </select>
-        <Link href={user ? "/profile" : "/login"}>
+        <Link href="/login">
           <div className="profile-icon">👤</div>
         </Link>
       </header>
