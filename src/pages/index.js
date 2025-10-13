@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Head from "next/head"; // <-- CRITICAL: Import Head for the viewport meta tag
 import Link from "next/link";
 // import Image from "next/image"; // Removed since it's not strictly used in the logic
 
@@ -127,6 +128,14 @@ export default function Home() {
 
   return (
     <>
+      {/* ------------------------------------------- */}
+      {/* --- FIX 1: ADD VIEWPORT META TAG VIA Head --- */}
+      {/* ------------------------------------------- */}
+      <Head>
+        <title>AIVISOR: Crypto Position Analytics Terminal</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+      </Head>
+
       <header className="fixed-header">
         <div className="left-header">
           <div className="logo">
@@ -507,7 +516,7 @@ export default function Home() {
       {/* --- SUBSCRIPTIONS & EXPLANATORY LINE --- */}
       <div className="subscriptions info-panel">
         <div className="sub-card">
-          <h3>&gt; SYSTEM_OVERRIDE_PREMIUM</h3>
+          <h3>&gt; AIVISOR_PREMIUM</h3>
           <p className="premium-explainer">
             Unlock real-time AI trend analysis and position insights.
           </p>{" "}
@@ -645,26 +654,27 @@ export default function Home() {
           100% { background-position: 100% 100%; }
         }
 
-        /* --- BODY & FONT --- */
-        body {
-          margin: 0;
-          padding: 0;
-          font-family: "Share Tech Mono", monospace; /* Robotic Monospace Font */
-          color: var(--text-primary);
-          min-height: 100vh;
-          overflow-x: hidden;
-          background-color: var(--bg-super-dark); /* Base dark color */
-          background-image:
-            linear-gradient(270deg, rgba(0, 191, 255, 0.05), rgba(57, 255, 20, 0.05)), /* Slow moving gradients */
-            linear-gradient(rgba(0,0,0,0.1) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(0,0,0,0.05) 1px, transparent 1px);
-          background-size: 400% 400%, 100% 4px, 4px 100%;
-          animation: backgroundMove 30s linear infinite alternate; /* Slow gradient animation */
+        /* ---------------------------------------------------- */
+        /* --- FIX 2: EXPLICITLY HIDE HORIZONTAL OVERFLOW --- */
+        /* ---------------------------------------------------- */
+        html, body {
+            max-width: 100%; /* Ensures no element exceeds the device width */
+            overflow-x: hidden; /* Hides horizontal scrolling */
+            margin: 0;
+            padding: 0;
+            font-family: "Share Tech Mono", monospace;
+            color: var(--text-primary);
+            min-height: 100vh;
+            background-color: var(--bg-super-dark);
+            background-image:
+              linear-gradient(270deg, rgba(0, 191, 255, 0.05), rgba(57, 255, 20, 0.05)),
+              linear-gradient(rgba(0,0,0,0.1) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(0,0,0,0.05) 1px, transparent 1px);
+            background-size: 400% 400%, 100% 4px, 4px 100%;
+            animation: backgroundMove 30s linear infinite alternate;
         }
-        
-        /* ------------------------------------------- */
-        /* --- RESPONSIVE HEADER & NAVIGATION STYLES --- */
-        /* ------------------------------------------- */
+
+        /* --- HEADER & NAVIGATION --- */
 
         .fixed-header {
           width: 100%;
@@ -773,6 +783,7 @@ export default function Home() {
             border: 1px solid var(--bg-light);
             background: var(--bg-box);
             box-shadow: 0 0 15px rgba(0, 191, 255, 0.1);
+            box-sizing: border-box; /* Important for padding/border not to cause overflow */
         }
         .info-panel h2 {
             color: var(--secondary-accent);
@@ -788,7 +799,6 @@ export default function Home() {
         /* --- HOW IT WORKS FLOW (Responsive) --- */
         .flow-container {
             display: grid;
-            /* Adaptive grid for mobile: 1 column, then 2, then 4 */
             grid-template-columns: 1fr; 
             gap: 20px;
             text-align: center;
@@ -798,6 +808,7 @@ export default function Home() {
             padding: 20px;
             border: 1px dashed var(--bg-light);
             transition: all 0.3s;
+            box-sizing: border-box;
         }
         .flow-step:hover {
             border: 1px solid var(--primary-accent);
@@ -819,7 +830,6 @@ export default function Home() {
         /* --- FEATURE GRID (Responsive) --- */
         .feature-grid {
             display: grid;
-            /* Adaptive grid: 1 column for mobile, 2 for tablet, 4 for desktop */
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); 
             gap: 20px;
         }
@@ -828,6 +838,7 @@ export default function Home() {
             padding: 20px;
             border-left: 3px solid var(--primary-accent);
             box-shadow: 0 0 5px rgba(57, 255, 20, 0.2);
+            box-sizing: border-box;
         }
         .feature-card h3 {
             color: var(--primary-accent);
@@ -845,16 +856,18 @@ export default function Home() {
         
         /* --- MAIN BOX & FORM ELEMENTS --- */
         .content-container {
-          padding: 10px; /* Reduced padding for mobile */
+          padding: 10px; 
         }
         .main-box {
           max-width: 600px;
+          width: 95%; /* Use 95% to give some buffer on very small screens */
           margin: 0 auto;
           background: var(--bg-box); 
           border: 3px solid var(--primary-accent);
           box-shadow: 0 0 50px rgba(166, 3, 172, 0.75);
-          padding: 20px; /* Reduced padding for mobile */
+          padding: 40px;
           margin-bottom: 60px;
+          box-sizing: border-box; /* CRITICAL: Padding included in width */
         }
         
         .terminal-prompt {
@@ -878,14 +891,14 @@ export default function Home() {
           width: 100%;
           padding: 12px;
           border: 1px solid var(--primary-accent);
-          background: rgba(57, 255, 20, 0.05); /* Light green tint */
+          background: rgba(57, 255, 20, 0.05); 
           color: var(--text-primary);
           font-family: "Share Tech Mono", monospace;
           font-size: 1em;
           margin-bottom: 15px;
           box-shadow: inset 0 0 5px rgba(57, 255, 20, 0.3);
           transition: border-color 0.3s, box-shadow 0.3s;
-          box-sizing: border-box;
+          box-sizing: border-box; /* CRITICAL: Ensure inputs don't overflow */
         }
         .terminal-input:focus {
             border-color: var(--secondary-accent);
@@ -952,6 +965,7 @@ export default function Home() {
             padding: 15px;
             border: 1px solid var(--bg-light);
             background: rgba(10, 10, 31, 0.5);
+            box-sizing: border-box;
         }
         .result-block h3 {
             color: var(--primary-accent);
@@ -962,7 +976,7 @@ export default function Home() {
         }
         .result-block p {
             margin: 8px 0;
-            word-wrap: break-word; /* Ensure long words break on small screens */
+            word-wrap: break-word; 
         }
         
         .price-value { color: var(--secondary-accent); font-weight: bold; }
@@ -973,7 +987,6 @@ export default function Home() {
         
         .levels-grid {
             display: grid;
-            /* Adaptive grid: 1 column for small screens, 2 for larger */
             grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
             gap: 15px;
             margin: 15px 0;
@@ -1015,7 +1028,7 @@ export default function Home() {
             white-space: nowrap;
             overflow: hidden;
             transition: width 1s ease-out;
-            min-width: 0; /* Ensures it shrinks fully if needed */
+            min-width: 0; 
         }
         .conf-long {
             background: var(--primary-accent);
@@ -1034,11 +1047,10 @@ export default function Home() {
         }
         .testimonial-carousel {
             display: grid;
-            /* Adaptive grid for testimonials */
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); 
             gap: 20px;
             margin-top: 20px;
-            overflow: auto; /* Allow horizontal scroll if cards are too wide/many */
+            overflow: auto; 
         }
         .testimonial-card {
             background: rgba(0, 191, 255, 0.05);
@@ -1046,6 +1058,7 @@ export default function Home() {
             border: 1px solid var(--secondary-accent);
             border-radius: 4px;
             flex-shrink: 0;
+            box-sizing: border-box;
         }
         .testimonial-source {
             display: block;
@@ -1097,6 +1110,7 @@ export default function Home() {
           text-align: center;
           border: 1px solid var(--primary-accent);
           box-shadow: 0 0 20px rgba(57, 255, 20, 0.5);
+          box-sizing: border-box;
         }
         .sub-card {
             padding: 20px;
@@ -1115,7 +1129,7 @@ export default function Home() {
         /* --- TRUST BADGES (Responsive) --- */
         .trust-logos {
             display: flex;
-            flex-wrap: wrap; /* Allows items to wrap on mobile */
+            flex-wrap: wrap; 
             justify-content: center;
             gap: 20px;
             margin-top: 20px;
@@ -1126,7 +1140,7 @@ export default function Home() {
             font-size: 1.1em;
             padding: 5px 10px;
             border: 1px dashed var(--bg-light);
-            white-space: nowrap; /* Prevent breaking for platforms */
+            white-space: nowrap; 
         }
         .trust-logo-item:hover {
             color: var(--secondary-accent);
@@ -1178,7 +1192,7 @@ export default function Home() {
         }
         .contact-cta {
             display: flex;
-            flex-direction: column; /* Stack elements on mobile */
+            flex-direction: column; 
             align-items: center;
             gap: 10px;
             margin-bottom: 20px;
@@ -1209,7 +1223,7 @@ export default function Home() {
 
         .footer-links {
             display: flex;
-            flex-wrap: wrap; /* Allows links to wrap on small screens */
+            flex-wrap: wrap; 
             justify-content: center;
             gap: 15px;
             margin: 20px 0;
@@ -1243,21 +1257,18 @@ export default function Home() {
         @media (max-width: 900px) {
             .info-panel {
                 padding: 20px;
-                margin: 30px 10px; /* More padding on the sides */
+                margin: 30px 10px; 
             }
             .flow-container {
-                grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); /* Two columns on tablet */
-            }
-            .feature-grid {
-                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* Still two columns is fine */
+                grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); 
             }
         }
 
         /* Mobile (Max 768px) */
         @media (max-width: 768px) {
             .fixed-header {
-                padding: 0 15px; /* Reduced header padding */
-                height: 60px; /* Reduced header height */
+                padding: 0 15px; 
+                height: 60px; 
             }
             .header-spacer {
                 height: 60px;
@@ -1266,52 +1277,50 @@ export default function Home() {
                 gap: 10px;
             }
             .main-nav {
-                display: none; /* Hide main navigation links on mobile */
+                display: none; 
             }
             .right-header {
                 gap: 10px;
             }
 
             .animated-aivisor-title {
-                font-size: 2.5em; /* Smaller main title font */
+                font-size: 2.5em; 
                 letter-spacing: 4px;
             }
             .title-subtitle {
-                font-size: 0.8em; /* Smaller subtitle font */
+                font-size: 0.8em; 
                 letter-spacing: 2px;
             }
 
             .main-box {
-                padding: 20px; /* Consistent box padding */
-                width: 100%; /* Take full width on mobile */
-                box-sizing: border-box;
+                padding: 20px; 
             }
 
             .flow-container {
-                grid-template-columns: 1fr; /* Stack flow steps vertically */
+                grid-template-columns: 1fr; 
             }
             
             .levels-grid {
-                grid-template-columns: 1fr; /* Stack risk levels vertically */
+                grid-template-columns: 1fr; 
             }
             
             .testimonial-carousel {
-                grid-template-columns: 1fr; /* Stack testimonials vertically */
+                grid-template-columns: 1fr; 
                 max-width: 400px;
                 margin-left: auto;
                 margin-right: auto;
             }
             
             .feature-grid {
-                grid-template-columns: 1fr; /* Stack features vertically */
+                grid-template-columns: 1fr; 
             }
 
             .tagline-text {
-                font-size: 1.5em; /* Smaller tagline font */
+                font-size: 1.5em; 
             }
             
             .trust-logos {
-                flex-direction: column; /* Stack trust logos vertically */
+                flex-direction: column; 
                 align-items: center;
             }
             .trust-logo-item {
@@ -1319,7 +1328,7 @@ export default function Home() {
             }
             
             .footer-links {
-                flex-direction: column; /* Stack footer links vertically */
+                flex-direction: column; 
                 gap: 10px;
             }
         }
@@ -1330,7 +1339,7 @@ export default function Home() {
                 font-size: 1.2em;
             }
             .app-tag {
-                display: none; /* Hide app tag for tiny screens */
+                display: none; 
             }
             .profile-icon {
                  font-size: 12px;
