@@ -1,7 +1,6 @@
 import { useState } from "react";
-import Head from "next/head"; // <-- CRITICAL: Import Head for the viewport meta tag
+import Head from "next/head";
 import Link from "next/link";
-// import Image from "next/image"; // Removed since it's not strictly used in the logic
 
 // Define a custom font style for the logo text
 const logoFont = {
@@ -21,7 +20,6 @@ const AnimatedAivisorTitle = () => (
     <div className="title-subtitle">CRYPTO POSITION ANALYTICS TERMINAL</div>
   </div>
 );
-// -----------------------------------------------------------
 
 // --- New Component: Collapsible FAQ Item ---
 const FAQItem = ({ question, answer }) => {
@@ -75,10 +73,11 @@ export default function Home() {
       entry_price: parsedEntryPrice,
       quantity: parsedQuantity,
       timeframe: timeframe,
+      has_both_positions: false,
+      risk_pct: 0.02,
     };
     setLoading(true);
     try {
-      // NOTE: Using a placeholder URL for demonstration. Replace with your actual backend URL.
       const response = await fetch(
         process.env.NEXT_PUBLIC_BACKEND_URL ||
           "https://python-backend-pr.vercel.app/analyze",
@@ -128,9 +127,6 @@ export default function Home() {
 
   return (
     <>
-      {/* ------------------------------------------- */}
-      {/* --- FIX 1: ADD VIEWPORT META TAG VIA Head --- */}
-      {/* ------------------------------------------- */}
       <Head>
         <title>AIVISOR: Crypto Position Analytics Terminal</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
@@ -140,7 +136,6 @@ export default function Home() {
         <div className="left-header">
           <div className="logo">
             <div className="logo-icon-wrapper">
-              {/* Using a generic /icon placeholder since I don't have access to your image */}
               <div className="terminal-icon">🤖</div>
             </div>
             <span style={logoFont}>AIVISOR</span>
@@ -164,15 +159,12 @@ export default function Home() {
         </div>
       </header>
 
-      {/* FIXED: Spacer height matches header height */}
       <div className="header-spacer"></div>
 
-      {/* Increased top margin for better spacing */}
       <div style={{ marginTop: "50px" }}>
         <AnimatedAivisorTitle />
       </div>
 
-      {/* --- MISSION STATEMENT SECTION --- */}
       <section id="mission" className="info-panel mission-statement">
         <h2>&gt; EXECUTE AI-POWERED ANALYSIS</h2>
         <p>
@@ -211,7 +203,7 @@ export default function Home() {
                 className={`slider-option ${
                   positionType === "Long" ? "active" : ""
                 }`}
-                onClick={() => setPositionType("Long")}
+                onClick={() => selectPositionType("Long")}
               >
                 LONG [BUY]
               </div>
@@ -219,7 +211,7 @@ export default function Home() {
                 className={`slider-option ${
                   positionType === "Short" ? "active" : ""
                 }`}
-                onClick={() => setPositionType("Short")}
+                onClick={() => selectPositionType("Short")}
               >
                 SHORT [SELL]
               </div>
@@ -332,9 +324,14 @@ export default function Home() {
 
                 <h4>&gt; STOP_LOSS_ZONE (SL)</h4>
                 <div className="levels-grid">
+                  {result.user_stoploss && (
+                    <div className="level-item stoploss-item">
+                      User SL: ${result.user_stoploss?.toFixed(5)}
+                    </div>
+                  )}
                   {result.market_stoplosses?.map((sl, idx) => (
                     <div key={idx} className="level-item stoploss-item">
-                      SL-{idx + 1}: ${sl?.toFixed(5)}
+                      Market SL-{idx + 1}: ${sl?.toFixed(5)}
                     </div>
                   ))}
                 </div>
@@ -349,7 +346,7 @@ export default function Home() {
                   </span>
                 </p>
                 <p>
-                  <strong>CONFIDENCE_METER:</strong>{" "}
+                  <strong>CONFIDENCE_METER:</strong>
                 </p>
                 <div className="confidence-bar">
                   <div
@@ -370,14 +367,41 @@ export default function Home() {
                   {result.trend_comment || "[NO_COMMENT]"}
                 </p>
               </div>
+
+              <div className="result-block">
+                <h3>[04] DETECTED_PATTERNS</h3>
+                <div className="pattern-box">
+                  <div className="pattern-item">
+                    <strong>Candlesticks:</strong>{" "}
+                    {result.detected_patterns?.candlesticks?.length > 0
+                      ? result.detected_patterns.candlesticks.join(", ")
+                      : "[NO PATTERNS DETECTED]"}
+                  </div>
+                  <div className="pattern-item">
+                    <strong>Chart Patterns:</strong>{" "}
+                    {result.detected_patterns?.chart_patterns?.length > 0
+                      ? result.detected_patterns.chart_patterns.join(", ")
+                      : "[NO PATTERNS DETECTED]"}
+                  </div>
+                </div>
+              </div>
+
+              <div className="result-block">
+                <h3>[05] RECOMMENDED_ACTION</h3>
+                <div className="action-item">
+                  <strong>ACTION:</strong>{" "}
+                  <span className="trend-value">
+                    {result.recommended_action?.toUpperCase() || "[NO ACTION]"}
+                  </span>
+                </div>
+              </div>
             </div>
           )}
         </div>
       </div>
 
-      <div style={{ marginTop: "100px" }}></div> {/* Extra space */}
+      <div style={{ marginTop: "100px" }}></div>
 
-      {/* --- HOW IT WORKS: 3-STEP FLOW --- */}
       <section id="howitworks" className="info-panel how-it-works">
         <h2>:: HOW_IT_WORKS_FLOW</h2>
         <div className="flow-container">
@@ -416,9 +440,8 @@ export default function Home() {
         </div>
       </section>
 
-      <div style={{ marginTop: "100px" }}></div> {/* Extra space */}
+      <div style={{ marginTop: "100px" }}></div>
 
-      {/* --- QUICK FEATURES OVERVIEW SECTION (New) --- */}
       <section id="features" className="info-panel feature-grid">
         <h2>:: CORE_SYSTEM_FEATURES</h2>
         <div className="feature-card">
@@ -459,9 +482,8 @@ export default function Home() {
         </div>
       </section>
 
-      <div style={{ marginTop: "100px" }}></div> {/* Extra space */}
+      <div style={{ marginTop: "100px" }}></div>
 
-      {/* --- TESTIMONIALS CAROUSEL SECTION (New) --- */}
       <section id="testimonials" className="info-panel testimonials-section">
         <h2>:: TESTIMONIALS_FEEDBACK_LOOP</h2>
         <div className="testimonial-carousel">
@@ -492,9 +514,8 @@ export default function Home() {
         </p>
       </section>
 
-      <div style={{ marginTop: "100px" }}></div> {/* Extra space */}
+      <div style={{ marginTop: "100px" }}></div>
 
-      {/* --- FAQ SECTION (New) --- */}
       <section id="faq" className="info-panel faq-section">
         <h2>:: FREQUENTLY_ASKED_QUESTIONS</h2>
         <FAQItem
@@ -511,16 +532,14 @@ export default function Home() {
         />
       </section>
 
-      <div style={{ marginTop: "100px" }}></div> {/* Extra space */}
+      <div style={{ marginTop: "100px" }}></div>
 
-      {/* --- SUBSCRIPTIONS & EXPLANATORY LINE --- */}
       <div className="subscriptions info-panel">
         <div className="sub-card">
           <h3>&gt; AIVISOR_PREMIUM</h3>
           <p className="premium-explainer">
             Unlock real-time AI trend analysis and position insights.
-          </p>{" "}
-          {/* Explanatory line */}
+          </p>
           <p>
             Access advanced predictive models, unlimited usage, and priority data
             processing.
@@ -533,9 +552,8 @@ export default function Home() {
         </div>
       </div>
 
-      <div style={{ marginTop: "100px" }}></div> {/* Extra space */}
+      <div style={{ marginTop: "100px" }}></div>
 
-      {/* --- SECURITY AND COMPLIANCE (New) --- */}
       <section className="info-panel security-info">
         <h2>:: SECURITY_AND_COMPLIANCE</h2>
         <p>
@@ -545,9 +563,8 @@ export default function Home() {
         </p>
       </section>
 
-      <div style={{ marginTop: "100px" }}></div> {/* Extra space */}
+      <div style={{ marginTop: "100px" }}></div>
 
-      {/* --- TRUST BADGES (New) --- */}
       <section className="info-panel trust-badges-section">
         <h2>:: PLATFORM_INTEGRATION_STATUS</h2>
         <div className="trust-logos">
@@ -558,9 +575,8 @@ export default function Home() {
         </div>
       </section>
 
-      <div style={{ marginTop: "100px" }}></div> {/* Extra space */}
+      <div style={{ marginTop: "100px" }}></div>
 
-      {/* --- ROADMAP (New) --- */}
       <section className="info-panel roadmap-section">
         <h2>:: UPCOMING_FEATURES_V3.2</h2>
         <ul className="roadmap-list">
@@ -570,19 +586,17 @@ export default function Home() {
         </ul>
       </section>
 
-      <div style={{ marginTop: "100px" }}></div> {/* Extra space */}
+      <div style={{ marginTop: "100px" }}></div>
 
-      {/* --- TAGLINE (New) --- */}
       <div className="tagline-section">
         <h2 className="tagline-text">
           AI-Powered Insights for Smarter Crypto Decisions.
         </h2>
       </div>
 
-      <div style={{ marginTop: "100px" }}></div> {/* Extra space */}
+      <div style={{ marginTop: "100px" }}></div>
 
       <footer id="contact" className="footer">
-        {/* Call-to-action Contact/Live Chat Section (New) */}
         <div className="contact-cta">
           <span className="chat-icon">💬</span>
           <span>Questions? Reach us instantly via live chat.</span>
@@ -614,32 +628,25 @@ export default function Home() {
         </p>
       </footer>
 
-      {/* --- CYBERPUNK STYLES (UPDATED FOR RESPONSIVENESS) --- */}
       <style jsx global>{`
-        /* --- THEME & FONT DEFINITIONS (CYBERPUNK TERMINAL) --- */
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap');
         
         :root {
-          --bg-dark: #0A0A1F; /* Deep Dark Blue/Black */
-          --bg-light: #161633; /* Slightly Lighter Background */
-          --bg-box: rgba(2, 2, 25, 0.9); /* Almost Black transparent */
-          --bg-super-dark: #04041A; /* Even Darker for animated BG */
-          
-          --primary-accent: #39FF14; /* NEON GREEN */
-          --secondary-accent: #00BFFF; /* ELECTRIC BLUE */
-          
-          --text-primary: #E0E0E0; /* Light Gray/White */
-          --text-secondary: #8888AA; /* Muted Blue/Gray */
-          
+          --bg-dark: #0A0A1F;
+          --bg-light: #161633;
+          --bg-box: rgba(2, 2, 25, 0.9);
+          --bg-super-dark: #04041A;
+          --primary-accent: #39FF14;
+          --secondary-accent: #00BFFF;
+          --text-primary: #E0E0E0;
+          --text-secondary: #8888AA;
           --primary-accent-glow: rgba(57, 255, 20, 0.8);
           --secondary-accent-glow-faint: rgba(0, 191, 255, 0.3);
-          
           --error-color: #FF4D4D;
           --positive-color: var(--primary-accent);
           --negative-color: var(--error-color);
         }
 
-        /* --- KEYFRAMES --- (omitted for brevity, assume they are correct) */
         @keyframes pulseGlow {
           0% { box-shadow: 0 0 5px var(--secondary-accent-glow-faint), 0 0 10px var(--primary-accent-glow); }
           50% { box-shadow: 0 0 15px var(--secondary-accent), 0 0 30px var(--primary-accent-glow); }
@@ -654,12 +661,9 @@ export default function Home() {
           100% { background-position: 100% 100%; }
         }
 
-        /* ---------------------------------------------------- */
-        /* --- FIX 2: EXPLICITLY HIDE HORIZONTAL OVERFLOW --- */
-        /* ---------------------------------------------------- */
         html, body {
-            max-width: 100%; /* Ensures no element exceeds the device width */
-            overflow-x: hidden; /* Hides horizontal scrolling */
+            max-width: 100%;
+            overflow-x: hidden;
             margin: 0;
             padding: 0;
             font-family: "Share Tech Mono", monospace;
@@ -673,8 +677,6 @@ export default function Home() {
             background-size: 400% 400%, 100% 4px, 4px 100%;
             animation: backgroundMove 30s linear infinite alternate;
         }
-
-        /* --- HEADER & NAVIGATION --- */
 
         .fixed-header {
           width: 100%;
@@ -743,7 +745,6 @@ export default function Home() {
             box-shadow: 0 0 15px var(--primary-accent-glow);
         }
 
-        /* --- MAIN TITLE (AIVISOR) --- */
         .animated-aivisor-title-container {
             text-align: center;
             margin: 50px auto 50px auto; 
@@ -759,8 +760,8 @@ export default function Home() {
             animation: pulseGlow 4s ease-in-out infinite;
             line-height: 1;
         }
-        .aivi { color: var(--primary-accent); } /* AI- */
-        .visor { color: var(--secondary-accent); } /* VISOR */
+        .aivi { color: var(--primary-accent); }
+        .visor { color: var(--secondary-accent); }
         .title-subtitle {
             font-size: 1em;
             color: var(--text-secondary);
@@ -775,7 +776,6 @@ export default function Home() {
           50% { opacity: 0.2; }
         }
         
-        /* --- GENERAL INFO PANELS (Mission/Features) --- */
         .info-panel {
             max-width: 900px;
             margin: 40px auto;
@@ -783,7 +783,7 @@ export default function Home() {
             border: 1px solid var(--bg-light);
             background: var(--bg-box);
             box-shadow: 0 0 15px rgba(0, 191, 255, 0.1);
-            box-sizing: border-box; /* Important for padding/border not to cause overflow */
+            box-sizing: border-box;
         }
         .info-panel h2 {
             color: var(--secondary-accent);
@@ -796,10 +796,9 @@ export default function Home() {
             color: var(--text-secondary);
         }
 
-        /* --- HOW IT WORKS FLOW (Responsive) --- */
         .flow-container {
             display: grid;
-            grid-template-columns: 1fr; 
+            grid-template-columns: 1fr;
             gap: 20px;
             text-align: center;
             margin-top: 30px;
@@ -827,10 +826,9 @@ export default function Home() {
             font-size: 1.2em;
         }
 
-        /* --- FEATURE GRID (Responsive) --- */
         .feature-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); 
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 20px;
         }
         .feature-card {
@@ -854,20 +852,19 @@ export default function Home() {
             animation-duration: 4s;
         }
         
-        /* --- MAIN BOX & FORM ELEMENTS --- */
         .content-container {
-          padding: 10px; 
+          padding: 10px;
         }
         .main-box {
           max-width: 600px;
-          width: 95%; /* Use 95% to give some buffer on very small screens */
+          width: 95%;
           margin: 0 auto;
-          background: var(--bg-box); 
+          background: var(--bg-box);
           border: 3px solid var(--primary-accent);
           box-shadow: 0 0 50px rgba(166, 3, 172, 0.75);
           padding: 40px;
           margin-bottom: 60px;
-          box-sizing: border-box; /* CRITICAL: Padding included in width */
+          box-sizing: border-box;
         }
         
         .terminal-prompt {
@@ -891,14 +888,14 @@ export default function Home() {
           width: 100%;
           padding: 12px;
           border: 1px solid var(--primary-accent);
-          background: rgba(57, 255, 20, 0.05); 
+          background: rgba(57, 255, 20, 0.05);
           color: var(--text-primary);
           font-family: "Share Tech Mono", monospace;
           font-size: 1em;
           margin-bottom: 15px;
           box-shadow: inset 0 0 5px rgba(57, 255, 20, 0.3);
           transition: border-color 0.3s, box-shadow 0.3s;
-          box-sizing: border-box; /* CRITICAL: Ensure inputs don't overflow */
+          box-sizing: border-box;
         }
         .terminal-input:focus {
             border-color: var(--secondary-accent);
@@ -954,7 +951,6 @@ export default function Home() {
             box-shadow: none;
         }
 
-        /* --- RESULT BOX & LEVELS (Responsive) --- */
         #result {
           margin-top: 40px;
           padding-top: 20px;
@@ -976,7 +972,7 @@ export default function Home() {
         }
         .result-block p {
             margin: 8px 0;
-            word-wrap: break-word; 
+            word-wrap: break-word;
         }
         
         .price-value { color: var(--secondary-accent); font-weight: bold; }
@@ -1010,8 +1006,37 @@ export default function Home() {
             color: var(--error-color);
             border: 1px solid var(--error-color);
         }
+
+        .pattern-box {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+            margin: 15px 0;
+            padding: 10px;
+            border: 1px solid var(--primary-accent);
+            background: rgba(57, 255, 20, 0.05);
+            box-sizing: border-box;
+        }
+        .pattern-item {
+            font-size: 0.9em;
+            color: var(--text-primary);
+        }
+        .pattern-item strong {
+            color: var(--secondary-accent);
+        }
+
+        .action-item {
+            padding: 10px;
+            font-size: 1em;
+            color: var(--text-primary);
+            border: 1px dashed var(--primary-accent);
+            text-align: center;
+            box-sizing: border-box;
+        }
+        .action-item strong {
+            color: var(--secondary-accent);
+        }
         
-        /* --- CONFIDENCE BAR --- */
         .confidence-bar {
             display: flex;
             height: 30px;
@@ -1028,7 +1053,7 @@ export default function Home() {
             white-space: nowrap;
             overflow: hidden;
             transition: width 1s ease-out;
-            min-width: 0; 
+            min-width: 0;
         }
         .conf-long {
             background: var(--primary-accent);
@@ -1041,16 +1066,15 @@ export default function Home() {
             text-shadow: 0 0 5px var(--bg-dark);
         }
 
-        /* --- TESTIMONIALS (Responsive) --- */
         .testimonials-section {
             background: var(--bg-box);
         }
         .testimonial-carousel {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); 
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 20px;
             margin-top: 20px;
-            overflow: auto; 
+            overflow: auto;
         }
         .testimonial-card {
             background: rgba(0, 191, 255, 0.05);
@@ -1073,7 +1097,6 @@ export default function Home() {
             color: var(--text-secondary);
         }
 
-        /* --- FAQ SECTION --- */
         .faq-section {
             background: var(--bg-box);
         }
@@ -1105,7 +1128,6 @@ export default function Home() {
             line-height: 1.5;
         }
 
-        /* --- SUBSCRIPTION --- */
         .subscriptions {
           text-align: center;
           border: 1px solid var(--primary-accent);
@@ -1126,10 +1148,9 @@ export default function Home() {
             margin-bottom: 15px;
         }
 
-        /* --- TRUST BADGES (Responsive) --- */
         .trust-logos {
             display: flex;
-            flex-wrap: wrap; 
+            flex-wrap: wrap;
             justify-content: center;
             gap: 20px;
             margin-top: 20px;
@@ -1140,7 +1161,7 @@ export default function Home() {
             font-size: 1.1em;
             padding: 5px 10px;
             border: 1px dashed var(--bg-light);
-            white-space: nowrap; 
+            white-space: nowrap;
         }
         .trust-logo-item:hover {
             color: var(--secondary-accent);
@@ -1148,7 +1169,6 @@ export default function Home() {
             cursor: default;
         }
 
-        /* --- ROADMAP --- */
         .roadmap-section {
             background: var(--bg-box);
         }
@@ -1168,7 +1188,6 @@ export default function Home() {
             font-weight: bold;
         }
 
-        /* --- TAGLINE --- */
         .tagline-section {
             text-align: center;
             padding: 40px 10px;
@@ -1181,7 +1200,6 @@ export default function Home() {
             margin: 0;
         }
 
-        /* --- FOOTER (Responsive) --- */
         .footer {
           background: var(--bg-dark);
           padding: 30px 20px;
@@ -1192,7 +1210,7 @@ export default function Home() {
         }
         .contact-cta {
             display: flex;
-            flex-direction: column; 
+            flex-direction: column;
             align-items: center;
             gap: 10px;
             margin-bottom: 20px;
@@ -1223,7 +1241,7 @@ export default function Home() {
 
         .footer-links {
             display: flex;
-            flex-wrap: wrap; 
+            flex-wrap: wrap;
             justify-content: center;
             gap: 15px;
             margin: 20px 0;
@@ -1249,26 +1267,20 @@ export default function Home() {
             color: var(--primary-accent);
         }
 
-        /* ------------------------------------------- */
-        /* --- MEDIA QUERIES FOR MOBILE ADAPTATION --- */
-        /* ------------------------------------------- */
-
-        /* Tablet/Small Desktop (Max 900px) */
         @media (max-width: 900px) {
             .info-panel {
                 padding: 20px;
-                margin: 30px 10px; 
+                margin: 30px 10px;
             }
             .flow-container {
-                grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); 
+                grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
             }
         }
 
-        /* Mobile (Max 768px) */
         @media (max-width: 768px) {
             .fixed-header {
-                padding: 0 15px; 
-                height: 60px; 
+                padding: 0 15px;
+                height: 60px;
             }
             .header-spacer {
                 height: 60px;
@@ -1277,50 +1289,54 @@ export default function Home() {
                 gap: 10px;
             }
             .main-nav {
-                display: none; 
+                display: none;
             }
             .right-header {
                 gap: 10px;
             }
 
             .animated-aivisor-title {
-                font-size: 2.5em; 
+                font-size: 2.5em;
                 letter-spacing: 4px;
             }
             .title-subtitle {
-                font-size: 0.8em; 
+                font-size: 0.8em;
                 letter-spacing: 2px;
             }
 
             .main-box {
-                padding: 20px; 
+                padding: 20px;
             }
 
             .flow-container {
-                grid-template-columns: 1fr; 
+                grid-template-columns: 1fr;
             }
             
             .levels-grid {
-                grid-template-columns: 1fr; 
+                grid-template-columns: 1fr;
+            }
+            
+            .pattern-box {
+                grid-template-columns: 1fr;
             }
             
             .testimonial-carousel {
-                grid-template-columns: 1fr; 
+                grid-template-columns: 1fr;
                 max-width: 400px;
                 margin-left: auto;
                 margin-right: auto;
             }
             
             .feature-grid {
-                grid-template-columns: 1fr; 
+                grid-template-columns: 1fr;
             }
 
             .tagline-text {
-                font-size: 1.5em; 
+                font-size: 1.5em;
             }
             
             .trust-logos {
-                flex-direction: column; 
+                flex-direction: column;
                 align-items: center;
             }
             .trust-logo-item {
@@ -1328,18 +1344,17 @@ export default function Home() {
             }
             
             .footer-links {
-                flex-direction: column; 
+                flex-direction: column;
                 gap: 10px;
             }
         }
 
-        /* Very Small Mobile (Max 480px) */
         @media (max-width: 480px) {
             .logo span {
                 font-size: 1.2em;
             }
             .app-tag {
-                display: none; 
+                display: none;
             }
             .profile-icon {
                  font-size: 12px;
