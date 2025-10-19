@@ -1,13 +1,15 @@
-// pages/index.js - Main Page (Updated with larger box sizes, exciting CTA, & link to subscribe page)
-import { useState, useRef } from "react";
+// pages/index.js - Main Page (Fixed profit_loss parsing in history preview)
+import { useState, useRef, useEffect } from "react";
 import Head from "next/head";
 import Link from "next/link";
 
-// Logo font style
+// Enhanced Logo font style with redesign: Split AIVISOR into AI and VISOR with distinct gradients and subtle animation
 const logoFont = {
   fontFamily: "'Inter', sans-serif",
   fontWeight: 800,
-  color: "#00D4FF",
+  WebkitBackgroundClip: "text",
+  WebkitTextFillColor: "transparent",
+  background: "linear-gradient(135deg, #00D4FF 0%, #7C3AED 50%, #00D4FF 100%)",
   textShadow: "0 0 8px rgba(0, 212, 255, 0.4), 0 0 16px rgba(124, 58, 237, 0.2)",
 };
 
@@ -197,7 +199,7 @@ const InputWizard = ({
   );
 };
 
-// Result Tabs Component
+// Result Tabs Component (Enhanced for mobile stability: Stacked layouts, no overflow, full viewport fit)
 const ResultTabs = ({ result }) => {
   const [activeTab, setActiveTab] = useState("summary");
 
@@ -377,6 +379,59 @@ const ResultTabs = ({ result }) => {
   );
 };
 
+// Recent History Component (Fixed profit_loss parsing)
+const RecentHistory = () => {
+  const [recentHistory, setRecentHistory] = useState([]);
+
+  useEffect(() => {
+    const loadRecentHistory = () => {
+      try {
+        const history = JSON.parse(localStorage.getItem('aivisorHistory') || '[]');
+        const threeDaysAgo = Date.now() - 3 * 24 * 60 * 60 * 1000;
+        const filtered = history.filter(h => h.timestamp > threeDaysAgo);
+        setRecentHistory(filtered.slice(0, 2));
+      } catch (err) {
+        console.error('Error loading history:', err);
+      }
+    };
+
+    loadRecentHistory();
+    // Poll every 30s for updates, or listen to storage events if needed
+    const interval = setInterval(loadRecentHistory, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  if (recentHistory.length === 0) return null;
+
+  return (
+    <div className="history-section">
+      <h3>Recent Analyses</h3>
+      <div className="history-list">
+        {recentHistory.map((item, idx) => {
+          const pl = parseFloat(item.result.profit_loss) || 0;
+          return (
+            <Link href="/history" key={idx} className="history-card">
+              <div className="history-preview">
+                <strong>{item.input.coin || 'Unknown'} {item.input.positionType || ''}</strong>
+                <span className="history-date">{new Date(item.timestamp).toLocaleDateString()}</span>
+                <div className="history-pl">
+                  <span>P/L: </span>
+                  <strong className={pl >= 0 ? "positive" : "negative"}>
+                    ${pl.toFixed(2)}
+                  </strong>
+                </div>
+              </div>
+            </Link>
+          );
+        })}
+      </div>
+      <Link href="/history">
+        <button className="cta-btn primary">View Full History</button>
+      </Link>
+    </div>
+  );
+};
+
 // FAQ Item Component
 const FAQItem = ({ question, answer }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -413,6 +468,20 @@ export default function Home() {
     dashboardRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  // History Management
+  const saveHistory = (input, resultData) => {
+    try {
+      const history = JSON.parse(localStorage.getItem('aivisorHistory') || '[]');
+      const item = { timestamp: Date.now(), input, result: resultData };
+      history.unshift(item); // Add to beginning for recency
+      const threeDaysAgo = Date.now() - 3 * 24 * 60 * 60 * 1000;
+      const filtered = history.filter(h => h.timestamp > threeDaysAgo);
+      localStorage.setItem('aivisorHistory', JSON.stringify(filtered.slice(0, 100))); // Limit to 100 max to prevent bloat
+    } catch (err) {
+      console.error('Error saving history:', err);
+    }
+  };
+
   const submitData = async () => {
     setResult(null);
     setError(null);
@@ -424,6 +493,14 @@ export default function Home() {
     if (isNaN(parsedEntryPrice) || isNaN(parsedQuantity)) {
       return alert("ERROR: Price and Quantity must be numerical values.");
     }
+    const inputData = {
+      coin,
+      market,
+      positionType,
+      timeframe,
+      entryPrice: parsedEntryPrice,
+      quantity: parsedQuantity,
+    };
     const data = {
       asset_class: "crypto",
       coin: coin.toUpperCase(),
@@ -453,6 +530,7 @@ export default function Home() {
       }
       const resultData = await response.json();
       setResult(resultData);
+      saveHistory(inputData, resultData); // Save to localStorage
     } catch (err) {
       setError(err.message);
     } finally {
@@ -464,7 +542,7 @@ export default function Home() {
     <>
       <Head>
         <title>AIVISOR: Neural Crypto Analytics</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
         <meta name="description" content="AI-powered crypto position analytics for traders." />
         <link rel="manifest" href="/manifest.json" />
       </Head>
@@ -525,6 +603,7 @@ export default function Home() {
         {error && <div className="error-card">Error: {error}</div>}
         {loading && <div className="loading-card">Processing... <span className="spinner">⚙️</span></div>}
         {result && <ResultTabs result={result} />}
+        <RecentHistory />
       </main>
 
       <section id="howitworks" className="section-grid">
@@ -918,6 +997,63 @@ export default function Home() {
           box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
           max-width: 900px;
           margin: 0 auto;
+          overflow: hidden; /* Prevent any overflow shifting */
+        }
+
+        .history-section {
+          max-width: 900px;
+          margin: 2rem auto;
+          background: var(--bg-card);
+          border-radius: 1rem;
+          padding: 2rem;
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .history-section h3 {
+          color: var(--accent-violet);
+          margin-bottom: 1rem;
+          font-weight: 600;
+          text-align: center;
+        }
+
+        .history-list {
+          display: flex;
+          flex-direction: column;
+          gap: 1rem;
+        }
+
+        .history-card {
+          display: block;
+          background: rgba(10, 10, 35, 0.6);
+          padding: 1rem;
+          border-radius: 0.75rem;
+          border-left: 4px solid var(--accent-cyan);
+          text-decoration: none;
+          color: var(--text-light);
+          transition: all 0.3s;
+        }
+
+        .history-card:hover {
+          background: rgba(0, 212, 255, 0.1);
+          transform: translateX(5px);
+        }
+
+        .history-preview {
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+        }
+
+        .history-date {
+          color: var(--text-muted);
+          font-size: 0.9rem;
+        }
+
+        .history-pl {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          font-size: 0.9rem;
         }
 
         .progress-bar {
@@ -1105,6 +1241,8 @@ export default function Home() {
           display: flex;
           border-bottom: 1px solid var(--text-muted);
           margin-bottom: 1.5rem;
+          flex-wrap: wrap; /* Allow wrapping on narrow screens to prevent horizontal shift */
+          gap: 0.5rem;
         }
 
         .tab-headers button {
@@ -1116,6 +1254,7 @@ export default function Home() {
           font-weight: 500;
           cursor: pointer;
           transition: all 0.3s;
+          white-space: nowrap; /* Prevent text wrapping in tabs */
         }
 
         .tab-headers button.active {
@@ -1125,6 +1264,7 @@ export default function Home() {
 
         .tab-content {
           animation: fadeIn 0.3s;
+          overflow-x: hidden; /* Ensure no horizontal overflow in content */
         }
 
         .result-card {
@@ -1132,6 +1272,7 @@ export default function Home() {
           padding: 1.5rem;
           border-radius: 0.75rem;
           border-left: 4px solid var(--accent-cyan);
+          overflow: hidden; /* Contain any overflowing elements */
         }
 
         .result-card h4 {
@@ -1154,6 +1295,7 @@ export default function Home() {
         .highlight {
           color: var(--accent-cyan);
           font-family: monospace;
+          word-break: break-all; /* Break long numbers if needed */
         }
 
         .positive { color: var(--success); }
@@ -1179,6 +1321,7 @@ export default function Home() {
           padding: 0.5rem;
           border-radius: 0.25rem;
           font-size: 0.9rem;
+          word-break: break-all; /* Handle long price strings */
         }
 
         .level.positive {
@@ -1226,6 +1369,7 @@ export default function Home() {
           background: rgba(255, 255, 255, 0.05);
           border-radius: 0.25rem;
           font-size: 0.9rem;
+          word-break: break-word; /* Prevent pattern name overflow */
         }
 
         .action-recommend {
@@ -1508,10 +1652,43 @@ export default function Home() {
           }
           .dashboard {
             padding: 0;
+            margin: 1rem 0; /* Reduce margin to fit more content */
           }
-          .wizard, .result-tabs {
+          .wizard, .result-tabs, .history-section {
             padding: 1.5rem;
             margin: 0 0.5rem;
+            border-radius: 0.75rem; /* Slightly smaller radius for mobile */
+          }
+          .tab-headers {
+            flex-direction: column; /* Stack tabs vertically on mobile to prevent overflow */
+            gap: 0;
+          }
+          .tab-headers button {
+            border-bottom: none;
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--text-muted);
+          }
+          .tab-headers button.active {
+            border-bottom: 1px solid var(--accent-cyan);
+            background: rgba(0, 212, 255, 0.05);
+          }
+          .summary-item {
+            flex-direction: column; /* Stack label and value on mobile for full visibility */
+            gap: 0.25rem;
+            align-items: flex-start;
+          }
+          .summary-item strong {
+            align-self: flex-end; /* Align values to the right even when stacked */
+          }
+          .levels-list .level {
+            font-size: 0.85rem; /* Slightly smaller font for levels on mobile */
+          }
+          .history-preview {
+            gap: 0.25rem;
+          }
+          .history-pl {
+            justify-content: flex-start;
           }
         }
 
@@ -1522,6 +1699,9 @@ export default function Home() {
           .input-field, .nav-btn, .analyze-btn, .cta-btn {
             font-size: 0.9rem;
             padding: 0.75rem;
+          }
+          .result-card, .history-card {
+            padding: 1rem; /* Reduce padding for more space on small screens */
           }
         }
       `}</style>
