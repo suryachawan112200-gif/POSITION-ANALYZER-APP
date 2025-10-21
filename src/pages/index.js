@@ -67,6 +67,16 @@ const CoinSuggest = ({ value, onChange }) => {
   );
 };
 
+export default function Home() {
+  console.log("Rendering Home page on server");
+  return (
+    <div>
+      <h1>Welcome to My App</h1>
+      {/* Your existing content */}
+    </div>
+  );
+}
+
 // Input Wizard Component
 const InputWizard = ({
   coin,

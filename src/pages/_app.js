@@ -11,6 +11,14 @@ const firebaseConfig = {
   appId: process.env.FIREBASE_APP_ID,
 };
 
+if (!firebaseConfig.apiKey) {
+  console.error("Firebase API Key missing during build");
+  // Return a fallback UI to prevent crash
+  return function MyApp({ Component, pageProps }) {
+    return <Component {...pageProps} />;
+  };
+}
+
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 
