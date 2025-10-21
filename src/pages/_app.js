@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { app, initializeApp } from "firebase/app"; // Import app and initializeApp
 import { getAuth, onAuthStateChanged } from "firebase/auth"; // Import auth if needed
-import { useAuth } from "../contexts/AuthContext"; // Adjust path as needed
+import { useAuth } from "/contexts/AuthContext"; // Adjust path as needed
 
 // Your Firebase configuration (should be in environment variables or a secure config file)
 const firebaseConfig = {
