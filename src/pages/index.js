@@ -1,7 +1,11 @@
-// pages/index.js - Main Page (Fixed profit_loss parsing in history preview)
 import { useState, useRef, useEffect } from "react";
 import Head from "next/head";
 import Link from "next/link";
+import { v4 as uuidv4 } from 'uuid';
+import { FaUserCircle } from "react-icons/fa";
+import { useAuth } from "/contexts/AuthContext";
+import ProfileModal from "/components/ProfileModal";
+import LoginPopup from "/components/LoginPopup";
 
 // Enhanced Logo font style with redesign: Split AIVISOR into AI and VISOR with distinct gradients and subtle animation
 const logoFont = {
@@ -9,8 +13,7 @@ const logoFont = {
   fontWeight: 800,
   WebkitBackgroundClip: "text",
   WebkitTextFillColor: "transparent",
-  background: "linear-gradient(135deg, #00D4FF 0%, #7C3AED 50%, #00D4FF 100%)",
-  textShadow: "0 0 8px rgba(0, 212, 255, 0.4), 0 0 16px rgba(124, 58, 237, 0.2)",
+  background: "linear-gradient(135deg, #4B9BFF 0%, #7A5CFF 50%, #4B9BFF 100%)",
 };
 
 // Hero Component with Live Ticker
@@ -26,7 +29,7 @@ const Hero = ({ scrollToDashboard }) => {
         </h1>
         <p className="hero-subtitle">Neural Analytics for Crypto Positions</p>
         <button className="quick-demo" onClick={scrollToDashboard}>
-          Try Your First 2 Analyses Free
+          Try Your First 2 Analyses Free (4h Timeframe)
         </button>
       </div>
     </div>
@@ -72,8 +75,6 @@ const InputWizard = ({
   setMarket,
   positionType,
   setPositionType,
-  timeframe,
-  setTimeframe,
   entryPrice,
   setEntryPrice,
   quantity,
@@ -93,7 +94,7 @@ const InputWizard = ({
 
   const isStepValid = () => {
     if (step === 1) return coin && market;
-    if (step === 2) return positionType && timeframe;
+    if (step === 2) return positionType;
     if (step === 3) return entryPrice && quantity;
     return true;
   };
@@ -126,7 +127,7 @@ const InputWizard = ({
         )}
         {step === 2 && (
           <>
-            <h3>Position & Timeframe</h3>
+            <h3>Position</h3>
             <div className="toggle-group">
               <button
                 className={`toggle-option ${positionType === "Long" ? "active" : ""}`}
@@ -143,20 +144,6 @@ const InputWizard = ({
                 Short
               </button>
             </div>
-            <select
-              value={timeframe}
-              onChange={(e) => setTimeframe(e.target.value)}
-              className="input-field"
-              aria-label="Select timeframe"
-            >
-              <option value="5m">5m</option>
-              <option value="15m">15m</option>
-              <option value="1h">1h</option>
-              <option value="4h">4h</option>
-              <option value="1d">1d</option>
-              <option value="1week">1w</option>
-              <option value="1month">1M</option>
-            </select>
           </>
         )}
         {step === 3 && (
@@ -199,7 +186,7 @@ const InputWizard = ({
   );
 };
 
-// Result Tabs Component (Enhanced for mobile stability: Stacked layouts, no overflow, full viewport fit)
+// Result Tabs Component
 const ResultTabs = ({ result }) => {
   const [activeTab, setActiveTab] = useState("summary");
 
@@ -379,7 +366,7 @@ const ResultTabs = ({ result }) => {
   );
 };
 
-// Recent History Component (Fixed profit_loss parsing)
+// Recent History Component
 const RecentHistory = () => {
   const [recentHistory, setRecentHistory] = useState([]);
 
@@ -396,7 +383,6 @@ const RecentHistory = () => {
     };
 
     loadRecentHistory();
-    // Poll every 30s for updates, or listen to storage events if needed
     const interval = setInterval(loadRecentHistory, 30000);
     return () => clearInterval(interval);
   }, []);
@@ -450,39 +436,73 @@ const FAQItem = ({ question, answer }) => {
   );
 };
 
+// Premium Section Component
+const PremiumSection = () => {
+  return (
+    <section className="premium-section">
+      <h2>Buy AIVISOR Premium at $29</h2>
+      <p>Unlimited analyses per day.</p>
+      <p>Priority support and early access to new features.</p>
+      <p>Advanced analytics tools and custom insights.</p>
+      <Link href="/subscribe">
+        <button className="pay-btn">Subscribe Now</button>
+      </Link>
+    </section>
+  );
+};
+
 export default function Home() {
-  // --- Original State and Logic (Unchanged) ---
+  const { user, loading: authLoading } = useAuth();
   const [market, setMarket] = useState("Futures");
   const [positionType, setPositionType] = useState("Long");
   const [coin, setCoin] = useState("");
   const [entryPrice, setEntryPrice] = useState("");
   const [quantity, setQuantity] = useState("");
-  const [timeframe, setTimeframe] = useState("15m");
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
+  const [showLoginPopup, setShowLoginPopup] = useState(false);
+  const [analysisCount, setAnalysisCount] = useState(0);
 
   const dashboardRef = useRef(null);
+
+  useEffect(() => {
+    // Load analysis count from localStorage
+    const count = parseInt(localStorage.getItem('aivisorAnalysisCount') || '0');
+    setAnalysisCount(count);
+  }, []);
 
   const scrollToDashboard = () => {
     dashboardRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  // History Management
   const saveHistory = (input, resultData) => {
     try {
       const history = JSON.parse(localStorage.getItem('aivisorHistory') || '[]');
       const item = { timestamp: Date.now(), input, result: resultData };
-      history.unshift(item); // Add to beginning for recency
+      history.unshift(item);
       const threeDaysAgo = Date.now() - 3 * 24 * 60 * 60 * 1000;
       const filtered = history.filter(h => h.timestamp > threeDaysAgo);
-      localStorage.setItem('aivisorHistory', JSON.stringify(filtered.slice(0, 100))); // Limit to 100 max to prevent bloat
+      localStorage.setItem('aivisorHistory', JSON.stringify(filtered.slice(0, 100)));
     } catch (err) {
       console.error('Error saving history:', err);
     }
   };
 
+  const incrementAnalysisCount = () => {
+    const newCount = analysisCount + 1;
+    setAnalysisCount(newCount);
+    localStorage.setItem('aivisorAnalysisCount', newCount.toString());
+  };
+
   const submitData = async () => {
+    // Check analysis limit for non-logged-in users
+    if (!user && analysisCount >= 2) {
+      setShowLoginPopup(true);
+      return;
+    }
+
     setResult(null);
     setError(null);
     if (!coin || !entryPrice || !quantity) {
@@ -497,7 +517,6 @@ export default function Home() {
       coin,
       market,
       positionType,
-      timeframe,
       entryPrice: parsedEntryPrice,
       quantity: parsedQuantity,
     };
@@ -508,7 +527,7 @@ export default function Home() {
       position_type: positionType.toLowerCase(),
       entry_price: parsedEntryPrice,
       quantity: parsedQuantity,
-      timeframe: timeframe,
+      timeframe: "4h",
       has_both_positions: false,
       risk_pct: 0.02,
     };
@@ -530,13 +549,18 @@ export default function Home() {
       }
       const resultData = await response.json();
       setResult(resultData);
-      saveHistory(inputData, resultData); // Save to localStorage
+      saveHistory(inputData, resultData);
+      incrementAnalysisCount();
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
   };
+
+  if (authLoading) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <>
@@ -545,6 +569,10 @@ export default function Home() {
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
         <meta name="description" content="AI-powered crypto position analytics for traders." />
         <link rel="manifest" href="/manifest.json" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+          rel="stylesheet"
+        />
       </Head>
 
       <header className="header">
@@ -552,22 +580,22 @@ export default function Home() {
           <div className="logo-section">
             <div className="logo-icon">🤖</div>
             <span style={logoFont}>AIVISOR</span>
-            <span className="version-tag">[V3.1]</span>
+            <span className="version-tag">[V3.2]</span>
           </div>
           <nav className="nav-links">
             <Link href="#features">Features</Link>
             <Link href="#howitworks">How It Works</Link>
             <Link href="#faq">FAQ</Link>
             <Link href="/support">Support</Link>
+            <Link href="/login">Login</Link>
           </nav>
           <div className="header-actions">
-            <select className="lang-select" aria-label="Select language">
-              <option>ENG</option>
-              <option>ESP</option>
-            </select>
-            <Link href="/login">
-              <button className="login-btn">Login</button>
-            </Link>
+            <span className="user-greeting">{user ? `Hello, ${user.email.split('@')[0]}` : "Hello, Trader"}</span>
+            <FaUserCircle
+              className="profile-icon"
+              onClick={() => setShowProfile(true)}
+              aria-label="Open profile"
+            />
           </div>
         </div>
       </header>
@@ -591,8 +619,6 @@ export default function Home() {
           setMarket={setMarket}
           positionType={positionType}
           setPositionType={setPositionType}
-          timeframe={timeframe}
-          setTimeframe={setTimeframe}
           entryPrice={entryPrice}
           setEntryPrice={setEntryPrice}
           quantity={quantity}
@@ -652,8 +678,8 @@ export default function Home() {
           </div>
           <div className="feature-card">
             <div className="feature-icon">📊</div>
-            <h3>Multi-Timeframe</h3>
-            <p>Holistic chart analysis.</p>
+            <h3>4h Analysis</h3>
+            <p>Focused 4h timeframe insights.</p>
           </div>
         </div>
       </section>
@@ -693,15 +719,7 @@ export default function Home() {
         />
       </section>
 
-      <section className="cta-section">
-        <div className="cta-card">
-          <h3>Go Premium</h3>
-          <p>Unlimited analysis, portfolio sync, priority AI.</p>
-          <Link href="/subscribe">
-            <button className="premium-btn">Start at $29/mo</button>
-          </Link>
-        </div>
-      </section>
+      <PremiumSection />
 
       <section className="security-section">
         <h2>Security & Compliance</h2>
@@ -741,20 +759,25 @@ export default function Home() {
         </div>
       </footer>
 
-      <style jsx global>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+      {showProfile && <ProfileModal onClose={() => setShowProfile(false)} />}
+      {showLoginPopup && <LoginPopup onClose={() => setShowLoginPopup(false)} />}
 
+      <style jsx global>{`
         :root {
-          --bg-primary: #000000;
-          --bg-secondary: #0A0A23;
-          --bg-card: rgba(10, 10, 35, 0.85);
-          --accent-cyan: #00D4FF;
-          --accent-violet: #7C3AED;
-          --text-light: #E2E8F0;
-          --text-muted: #94A3B8;
-          --success: #10B981;
+          --bg-primary: #FFFFFF;
+          --bg-secondary: #F5F8FF;
+          --bg-card: #F5F8FF;
+          --accent-blue: #4B9BFF;
+          --accent-purple: #7A5CFF;
+          --text-primary: #1A1A1A;
+          --text-muted: #6B7280;
+          --success: #3ED598;
           --error: #EF4444;
-          --gradient: linear-gradient(135deg, var(--accent-cyan), var(--accent-violet));
+          --gradient: linear-gradient(135deg, #4B9BFF, #7A5CFF);
+          --border-soft: #E5E7EB;
+          --shadow-subtle: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+          --shadow-hover: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+          --shadow-neumorphic: 5px 5px 10px #d9d9d9, -5px -5px 10px #ffffff;
         }
 
         * {
@@ -766,7 +789,7 @@ export default function Home() {
         body {
           font-family: 'Inter', sans-serif;
           background: var(--bg-primary);
-          color: var(--text-light);
+          color: var(--text-primary);
           line-height: 1.6;
           overflow-x: hidden;
           position: relative;
@@ -779,25 +802,18 @@ export default function Home() {
           left: 0;
           width: 100%;
           height: 100%;
-          background: radial-gradient(circle at 20% 80%, rgba(0, 212, 255, 0.1) 0%, transparent 50%),
-                      radial-gradient(circle at 80% 20%, rgba(124, 58, 237, 0.1) 0%, transparent 50%);
+          background: linear-gradient(135deg, rgba(75, 155, 255, 0.05) 0%, rgba(122, 92, 255, 0.05) 100%);
           pointer-events: none;
           z-index: -1;
-          animation: float 20s ease-in-out infinite;
-        }
-
-        @keyframes float {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-20px); }
         }
 
         .header {
           position: sticky;
           top: 0;
           z-index: 100;
-          background: rgba(0, 0, 0, 0.9);
+          background: rgba(255, 255, 255, 0.95);
           backdrop-filter: blur(20px);
-          border-bottom: 1px solid var(--accent-cyan);
+          border-bottom: 1px solid var(--border-soft);
           padding: 1rem 0;
         }
 
@@ -818,17 +834,11 @@ export default function Home() {
 
         .logo-icon {
           font-size: 2rem;
-          animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.7; }
         }
 
         .version-tag {
-          background: var(--accent-violet);
-          color: var(--bg-primary);
+          background: var(--accent-purple);
+          color: #FFFFFF;
           padding: 0.25rem 0.5rem;
           border-radius: 0.5rem;
           font-size: 0.75rem;
@@ -848,8 +858,7 @@ export default function Home() {
         }
 
         .nav-links a:hover {
-          color: var(--accent-cyan);
-          text-shadow: 0 0 8px rgba(0, 212, 255, 0.3);
+          color: var(--accent-blue);
         }
 
         .header-actions {
@@ -858,18 +867,26 @@ export default function Home() {
           gap: 1rem;
         }
 
-        .lang-select {
-          background: var(--bg-secondary);
-          color: var(--text-light);
-          border: 1px solid var(--accent-cyan);
-          padding: 0.5rem;
-          border-radius: 0.5rem;
+        .user-greeting {
+          color: var(--accent-blue);
           font-size: 0.9rem;
+          font-weight: 500;
         }
 
-        .login-btn, .support-btn, .premium-btn {
+        .profile-icon {
+          font-size: 2rem;
+          color: var(--text-muted);
+          cursor: pointer;
+          transition: color 0.3s;
+        }
+
+        .profile-icon:hover {
+          color: var(--accent-blue);
+        }
+
+        .login-btn, .support-btn, .pay-btn {
           background: var(--gradient);
-          color: var(--bg-primary);
+          color: #FFFFFF;
           padding: 0.75rem 1.5rem;
           border: none;
           border-radius: 2rem;
@@ -878,9 +895,14 @@ export default function Home() {
           transition: all 0.3s;
         }
 
-        .login-btn:hover, .support-btn:hover, .premium-btn:hover {
-          box-shadow: 0 0 20px rgba(0, 212, 255, 0.4);
+        .login-btn:hover, .support-btn:hover, .pay-btn:hover {
+          box-shadow: var(--shadow-hover);
           transform: translateY(-2px);
+        }
+
+        .pay-btn:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
         }
 
         .hero {
@@ -893,11 +915,12 @@ export default function Home() {
           position: absolute;
           top: 1rem;
           right: 2rem;
-          background: var(--bg-card);
+          background: var(--bg-secondary);
           padding: 0.5rem 1rem;
           border-radius: 2rem;
           font-size: 0.9rem;
-          color: var(--accent-cyan);
+          color: var(--accent-blue);
+          border: 1px solid var(--border-soft);
         }
 
         .ticker-change.positive {
@@ -917,16 +940,10 @@ export default function Home() {
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           margin-bottom: 1rem;
-          animation: glow 3s infinite;
         }
 
-        @keyframes glow {
-          0%, 100% { text-shadow: 0 0 20px var(--accent-cyan); }
-          50% { text-shadow: 0 0 30px var(--accent-violet); }
-        }
-
-        .aivi { color: var(--accent-cyan); }
-        .visor { color: var(--accent-violet); }
+        .aivi { color: var(--accent-blue); }
+        .visor { color: var(--accent-purple); }
 
         .hero-subtitle {
           color: var(--text-muted);
@@ -937,7 +954,7 @@ export default function Home() {
 
         .quick-demo {
           background: var(--gradient);
-          color: var(--bg-primary);
+          color: #FFFFFF;
           padding: 1.2rem 3rem;
           border: none;
           border-radius: 3rem;
@@ -945,18 +962,12 @@ export default function Home() {
           font-weight: 700;
           cursor: pointer;
           transition: all 0.3s;
-          animation: pulseGlow 2s infinite;
-          box-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
+          box-shadow: var(--shadow-subtle);
         }
 
         .quick-demo:hover {
-          box-shadow: 0 0 30px rgba(0, 212, 255, 0.7);
+          box-shadow: var(--shadow-hover);
           transform: scale(1.05);
-        }
-
-        @keyframes pulseGlow {
-          0%, 100% { box-shadow: 0 0 20px rgba(0, 212, 255, 0.5); }
-          50% { box-shadow: 0 0 30px rgba(0, 212, 255, 0.8); }
         }
 
         .mission-section {
@@ -970,11 +981,12 @@ export default function Home() {
           padding: 2rem;
           background: var(--bg-card);
           border-radius: 1rem;
-          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+          box-shadow: var(--shadow-subtle);
+          border: 1px solid var(--border-soft);
         }
 
         .mission-card h2 {
-          color: var(--accent-cyan);
+          color: var(--text-primary);
           margin-bottom: 1rem;
           font-weight: 600;
         }
@@ -990,27 +1002,30 @@ export default function Home() {
           padding: 0 1rem;
         }
 
-        .wizard, .result-tabs {
+        .wizard, .result-tabs, .premium-section, .history-section {
           background: var(--bg-card);
           border-radius: 1rem;
           padding: 3rem;
-          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+          box-shadow: var(--shadow-subtle);
           max-width: 900px;
           margin: 0 auto;
-          overflow: hidden; /* Prevent any overflow shifting */
+          overflow: hidden;
+          border: 1px solid var(--border-soft);
         }
 
-        .history-section {
-          max-width: 900px;
-          margin: 2rem auto;
-          background: var(--bg-card);
-          border-radius: 1rem;
-          padding: 2rem;
-          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        .premium-section h2 {
+          color: var(--text-primary);
+          margin-bottom: 1rem;
+          font-weight: 600;
+        }
+
+        .premium-section p {
+          color: var(--text-muted);
+          margin-bottom: 0.5rem;
         }
 
         .history-section h3 {
-          color: var(--accent-violet);
+          color: var(--text-primary);
           margin-bottom: 1rem;
           font-weight: 600;
           text-align: center;
@@ -1024,18 +1039,20 @@ export default function Home() {
 
         .history-card {
           display: block;
-          background: rgba(10, 10, 35, 0.6);
+          background: #FFFFFF;
           padding: 1rem;
           border-radius: 0.75rem;
-          border-left: 4px solid var(--accent-cyan);
+          border-left: 4px solid var(--accent-blue);
           text-decoration: none;
-          color: var(--text-light);
+          color: var(--text-primary);
           transition: all 0.3s;
+          box-shadow: var(--shadow-subtle);
         }
 
         .history-card:hover {
-          background: rgba(0, 212, 255, 0.1);
+          background: var(--bg-secondary);
           transform: translateX(5px);
+          box-shadow: var(--shadow-hover);
         }
 
         .history-preview {
@@ -1057,7 +1074,7 @@ export default function Home() {
         }
 
         .progress-bar {
-          background: var(--bg-secondary);
+          background: #E5E7EB;
           height: 0.5rem;
           border-radius: 0.25rem;
           margin-bottom: 1.5rem;
@@ -1089,7 +1106,7 @@ export default function Home() {
         }
 
         .wizard-step h3 {
-          color: var(--accent-violet);
+          color: var(--text-primary);
           margin-bottom: 1.5rem;
           font-weight: 600;
         }
@@ -1101,17 +1118,17 @@ export default function Home() {
         .input-field {
           width: 100%;
           padding: 1rem;
-          background: var(--bg-secondary);
-          border: 1px solid transparent;
+          background: #FFFFFF;
+          border: 1px solid var(--border-soft);
           border-radius: 0.5rem;
-          color: var(--text-light);
+          color: var(--text-primary);
           font-size: 1rem;
           transition: all 0.3s;
         }
 
         .input-field:focus {
-          border-color: var(--accent-cyan);
-          box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+          border-color: var(--accent-blue);
+          box-shadow: 0 0 0 3px rgba(75, 155, 255, 0.1);
           outline: none;
         }
 
@@ -1121,10 +1138,11 @@ export default function Home() {
 
         .toggle-group {
           display: flex;
-          background: var(--bg-secondary);
+          background: #FFFFFF;
           border-radius: 2rem;
           overflow: hidden;
           margin-bottom: 1.5rem;
+          border: 1px solid var(--border-soft);
         }
 
         .toggle-option {
@@ -1142,7 +1160,7 @@ export default function Home() {
 
         .toggle-option.active {
           background: var(--gradient);
-          color: var(--bg-primary);
+          color: #FFFFFF;
           font-weight: 600;
         }
 
@@ -1170,18 +1188,19 @@ export default function Home() {
         }
 
         .nav-btn.secondary {
-          background: var(--bg-secondary);
+          background: #FFFFFF;
           color: var(--text-muted);
+          border: 1px solid var(--border-soft);
         }
 
         .nav-btn:not(.secondary) {
           background: var(--gradient);
-          color: var(--bg-primary);
+          color: #FFFFFF;
         }
 
         .nav-btn:hover:not(:disabled) {
           transform: translateY(-2px);
-          box-shadow: 0 5px 15px rgba(0, 212, 255, 0.3);
+          box-shadow: var(--shadow-hover);
         }
 
         .nav-btn:disabled {
@@ -1193,7 +1212,7 @@ export default function Home() {
           width: 100%;
           padding: 1.2rem;
           background: var(--gradient);
-          color: var(--bg-primary);
+          color: #FFFFFF;
           border: none;
           border-radius: 0.5rem;
           font-size: 1.1rem;
@@ -1204,7 +1223,7 @@ export default function Home() {
 
         .analyze-btn:hover:not(:disabled) {
           transform: translateY(-2px);
-          box-shadow: 0 10px 20px rgba(0, 212, 255, 0.3);
+          box-shadow: var(--shadow-hover);
         }
 
         .analyze-btn:disabled {
@@ -1219,6 +1238,7 @@ export default function Home() {
           text-align: center;
           margin: 1rem 0;
           font-size: 1.1rem;
+          border: 1px solid var(--border-soft);
         }
 
         .error-card {
@@ -1239,9 +1259,9 @@ export default function Home() {
 
         .tab-headers {
           display: flex;
-          border-bottom: 1px solid var(--text-muted);
+          border-bottom: 1px solid var(--border-soft);
           margin-bottom: 1.5rem;
-          flex-wrap: wrap; /* Allow wrapping on narrow screens to prevent horizontal shift */
+          flex-wrap: wrap;
           gap: 0.5rem;
         }
 
@@ -1254,29 +1274,31 @@ export default function Home() {
           font-weight: 500;
           cursor: pointer;
           transition: all 0.3s;
-          white-space: nowrap; /* Prevent text wrapping in tabs */
+          white-space: nowrap;
         }
 
         .tab-headers button.active {
-          color: var(--accent-cyan);
-          border-bottom: 2px solid var(--accent-cyan);
+          color: var(--accent-blue);
+          border-bottom: 2px solid var(--accent-blue);
         }
 
         .tab-content {
           animation: fadeIn 0.3s;
-          overflow-x: hidden; /* Ensure no horizontal overflow in content */
+          overflow-x: hidden;
         }
 
         .result-card {
-          background: rgba(10, 10, 35, 0.6);
+          background: #FFFFFF;
           padding: 1.5rem;
           border-radius: 0.75rem;
-          border-left: 4px solid var(--accent-cyan);
-          overflow: hidden; /* Contain any overflowing elements */
+          border-left: 4px solid var(--accent-blue);
+          overflow: hidden;
+          border: 1px solid var(--border-soft);
+          box-shadow: var(--shadow-subtle);
         }
 
         .result-card h4 {
-          color: var(--accent-violet);
+          color: var(--text-primary);
           margin-bottom: 1rem;
           font-weight: 600;
         }
@@ -1293,21 +1315,21 @@ export default function Home() {
         }
 
         .highlight {
-          color: var(--accent-cyan);
+          color: var(--accent-blue);
           font-family: monospace;
-          word-break: break-all; /* Break long numbers if needed */
+          word-break: break-all;
         }
 
         .positive { color: var(--success); }
         .negative { color: var(--error); }
-        .trend { color: var(--accent-violet); }
+        .trend { color: var(--accent-purple); }
 
         .levels-section {
           margin: 1rem 0;
         }
 
         .levels-section h5 {
-          color: var(--text-light);
+          color: var(--text-primary);
           margin-bottom: 0.5rem;
         }
 
@@ -1321,12 +1343,12 @@ export default function Home() {
           padding: 0.5rem;
           border-radius: 0.25rem;
           font-size: 0.9rem;
-          word-break: break-all; /* Handle long price strings */
+          word-break: break-all;
         }
 
         .level.positive {
           border-left: 3px solid var(--success);
-          background: rgba(16, 185, 129, 0.1);
+          background: rgba(62, 213, 152, 0.1);
         }
 
         .level.negative {
@@ -1341,7 +1363,7 @@ export default function Home() {
         .meter-bar {
           display: flex;
           height: 0.5rem;
-          background: var(--bg-secondary);
+          background: var(--border-soft);
           border-radius: 0.25rem;
           overflow: hidden;
         }
@@ -1352,7 +1374,7 @@ export default function Home() {
           align-items: center;
           justify-content: center;
           font-size: 0.75rem;
-          color: var(--bg-primary);
+          color: #FFFFFF;
         }
 
         .meter-fill.long { background: var(--success); }
@@ -1366,16 +1388,16 @@ export default function Home() {
 
         .patterns-list div {
           padding: 0.5rem;
-          background: rgba(255, 255, 255, 0.05);
+          background: var(--bg-secondary);
           border-radius: 0.25rem;
           font-size: 0.9rem;
-          word-break: break-word; /* Prevent pattern name overflow */
+          word-break: break-word;
         }
 
         .action-recommend {
           text-align: center;
           padding: 1rem;
-          background: rgba(124, 58, 237, 0.1);
+          background: rgba(122, 92, 255, 0.1);
           border-radius: 0.5rem;
           font-size: 1rem;
         }
@@ -1400,17 +1422,18 @@ export default function Home() {
 
         .cta-btn.primary {
           background: var(--gradient);
-          color: var(--bg-primary);
+          color: #FFFFFF;
         }
 
         .cta-btn.secondary {
-          background: var(--bg-secondary);
-          color: var(--text-light);
+          background: #FFFFFF;
+          color: var(--text-primary);
+          border: 1px solid var(--border-soft);
         }
 
         .cta-btn:hover {
           transform: translateY(-2px);
-          box-shadow: 0 5px 15px rgba(0, 212, 255, 0.3);
+          box-shadow: var(--shadow-hover);
         }
 
         .section-grid {
@@ -1421,7 +1444,7 @@ export default function Home() {
         }
 
         .section-grid h2 {
-          color: var(--accent-cyan);
+          color: var(--text-primary);
           margin-bottom: 3rem;
           font-weight: 600;
         }
@@ -1438,20 +1461,22 @@ export default function Home() {
           border-radius: 1rem;
           transition: transform 0.3s;
           cursor: pointer;
+          box-shadow: var(--shadow-subtle);
+          border: 1px solid var(--border-soft);
         }
 
         .step-card:hover, .feature-card:hover {
           transform: translateY(-5px);
-          box-shadow: 0 10px 20px rgba(0, 212, 255, 0.2);
+          box-shadow: var(--shadow-hover);
         }
 
         .step-icon, .feature-icon {
           font-size: 2rem;
           margin-bottom: 1rem;
-          color: var(--accent-cyan);
+          color: var(--accent-blue);
         }
 
-        .testimonials-section, .faq-section, .cta-section, .security-section, .integrations-section, .roadmap-section {
+        .testimonials-section, .faq-section, .premium-section, .security-section, .integrations-section, .roadmap-section {
           padding: 4rem 2rem;
           background: var(--bg-secondary);
         }
@@ -1471,12 +1496,14 @@ export default function Home() {
           border-radius: 1rem;
           flex-shrink: 0;
           scroll-snap-align: center;
+          box-shadow: var(--shadow-subtle);
+          border: 1px solid var(--border-soft);
         }
 
         .testimonial-card cite {
           display: block;
           margin-top: 1rem;
-          color: var(--accent-violet);
+          color: var(--accent-purple);
           text-align: right;
           font-style: normal;
           font-size: 0.9rem;
@@ -1490,7 +1517,7 @@ export default function Home() {
 
         .faq-item {
           margin-bottom: 1rem;
-          border-bottom: 1px solid var(--text-muted);
+          border-bottom: 1px solid var(--border-soft);
         }
 
         .faq-question {
@@ -1501,7 +1528,7 @@ export default function Home() {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          color: var(--text-light);
+          color: var(--text-primary);
           font-size: 1rem;
           font-weight: 500;
           cursor: pointer;
@@ -1509,12 +1536,12 @@ export default function Home() {
         }
 
         .faq-question:hover {
-          color: var(--accent-cyan);
+          color: var(--accent-blue);
         }
 
         .faq-toggle {
           font-size: 1rem;
-          color: var(--accent-cyan);
+          color: var(--accent-blue);
         }
 
         .faq-answer {
@@ -1522,21 +1549,6 @@ export default function Home() {
           color: var(--text-muted);
           font-size: 0.9rem;
           animation: fadeIn 0.3s;
-        }
-
-        .cta-card {
-          max-width: 400px;
-          margin: 0 auto;
-          padding: 2rem;
-          background: var(--bg-card);
-          border-radius: 1rem;
-          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-          text-align: center;
-        }
-
-        .cta-card h3 {
-          color: var(--accent-cyan);
-          margin-bottom: 1rem;
         }
 
         .logos {
@@ -1561,18 +1573,20 @@ export default function Home() {
           margin-bottom: 0.5rem;
           border-radius: 0.5rem;
           font-size: 0.9rem;
+          box-shadow: var(--shadow-subtle);
+          border: 1px solid var(--border-soft);
         }
 
         .roadmap-list li:before {
           content: '→';
-          color: var(--accent-cyan);
+          color: var(--accent-blue);
           margin-right: 0.5rem;
         }
 
         .footer {
           padding: 3rem 2rem;
           background: var(--bg-primary);
-          border-top: 1px solid var(--accent-cyan);
+          border-top: 1px solid var(--border-soft);
           text-align: center;
         }
 
@@ -1591,7 +1605,7 @@ export default function Home() {
 
         .chat-icon {
           font-size: 1.5rem;
-          color: var(--accent-cyan);
+          color: var(--accent-blue);
         }
 
         .footer-links {
@@ -1608,7 +1622,7 @@ export default function Home() {
         }
 
         .footer-links a:hover {
-          color: var(--accent-cyan);
+          color: var(--accent-blue);
         }
 
         .disclaimer {
@@ -1650,39 +1664,39 @@ export default function Home() {
           .action-ctas {
             flex-direction: column;
           }
-          .dashboard {
+          .dashboard, .premium-section {
             padding: 0;
-            margin: 1rem 0; /* Reduce margin to fit more content */
+            margin: 1rem 0;
           }
-          .wizard, .result-tabs, .history-section {
+          .wizard, .result-tabs, .history-section, .premium-section {
             padding: 1.5rem;
             margin: 0 0.5rem;
-            border-radius: 0.75rem; /* Slightly smaller radius for mobile */
+            border-radius: 0.75rem;
           }
           .tab-headers {
-            flex-direction: column; /* Stack tabs vertically on mobile to prevent overflow */
+            flex-direction: column;
             gap: 0;
           }
           .tab-headers button {
             border-bottom: none;
             padding: 1rem;
             text-align: left;
-            border-bottom: 1px solid var(--text-muted);
+            border-bottom: 1px solid var(--border-soft);
           }
           .tab-headers button.active {
-            border-bottom: 1px solid var(--accent-cyan);
-            background: rgba(0, 212, 255, 0.05);
+            border-bottom: 1px solid var(--accent-blue);
+            background: rgba(75, 155, 255, 0.05);
           }
           .summary-item {
-            flex-direction: column; /* Stack label and value on mobile for full visibility */
+            flex-direction: column;
             gap: 0.25rem;
             align-items: flex-start;
           }
           .summary-item strong {
-            align-self: flex-end; /* Align values to the right even when stacked */
+            align-self: flex-end;
           }
           .levels-list .level {
-            font-size: 0.85rem; /* Slightly smaller font for levels on mobile */
+            font-size: 0.85rem;
           }
           .history-preview {
             gap: 0.25rem;
@@ -1701,7 +1715,7 @@ export default function Home() {
             padding: 0.75rem;
           }
           .result-card, .history-card {
-            padding: 1rem; /* Reduce padding for more space on small screens */
+            padding: 1rem;
           }
         }
       `}</style>
