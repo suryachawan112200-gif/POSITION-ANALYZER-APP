@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import Head from "next/head";
 import Link from "next/link";
-import { v4 as uuidv4 } from 'uuid';
+import dynamic from "next/dynamic";
 import { FaUserCircle } from "react-icons/fa";
 import { useAuth } from "/contexts/AuthContext";
 import ProfileModal from "/components/ProfileModal";
@@ -66,16 +66,6 @@ const CoinSuggest = ({ value, onChange }) => {
     </div>
   );
 };
-
-export default function Home() {
-  console.log("Rendering Home page on server");
-  return (
-    <div>
-      <h1>Welcome to My App</h1>
-      {/* Your existing content */}
-    </div>
-  );
-}
 
 // Input Wizard Component
 const InputWizard = ({
@@ -250,33 +240,40 @@ const ResultTabs = ({ result }) => {
             <div className="result-card">
               <h4>Trade Summary</h4>
               <div className="summary-item">
-                <span>Asset:</span> <strong>{result.coin} ({result.asset_class?.toUpperCase()})</strong>
+                <span>Asset:</span>{" "}
+                <strong>{result?.coin || "N/A"} ({result?.asset_class?.toUpperCase() || "N/A"})</strong>
               </div>
               <div className="summary-item">
-                <span>Market:</span> <strong>{result.market?.toUpperCase()}</strong>
+                <span>Market:</span> <strong>{result?.market?.toUpperCase() || "N/A"}</strong>
               </div>
               <div className="summary-item">
                 <span>Position:</span>{" "}
-                <strong className={result.position_type === "long" ? "positive" : "negative"}>
-                  {result.position_type?.toUpperCase()}
+                <strong
+                  className={result?.position_type === "long" ? "positive" : "negative"}
+                >
+                  {result?.position_type?.toUpperCase() || "N/A"}
                 </strong>
               </div>
               <div className="summary-item">
                 <span>Entry Price:</span>{" "}
-                <strong className="highlight">${result.entry_price?.toFixed(5)}</strong>
-              </div>
-              <div className="summary-item">
-                <span>Live Price:</span>{" "}
-                <strong className="highlight">${result.current_price?.toFixed(5)}</strong>
-              </div>
-              <div className="summary-item">
-                <span>P/L:</span>{" "}
-                <strong className={result.profit_loss >= 0 ? "positive" : "negative"}>
-                  {result.profit_loss || "N/A"}
+                <strong className="highlight">
+                  ${result?.entry_price?.toFixed(5) || "N/A"}
                 </strong>
               </div>
               <div className="summary-item">
-                <span>Status:</span> <em>{result.profitability_comment || "No Data"}</em>
+                <span>Live Price:</span>{" "}
+                <strong className="highlight">
+                  ${result?.current_price?.toFixed(5) || "N/A"}
+                </strong>
+              </div>
+              <div className="summary-item">
+                <span>P/L:</span>{" "}
+                <strong className={result?.profit_loss >= 0 ? "positive" : "negative"}>
+                  {result?.profit_loss || "N/A"}
+                </strong>
+              </div>
+              <div className="summary-item">
+                <span>Status:</span> <em>{result?.profitability_comment || "No Data"}</em>
               </div>
             </div>
           </div>
@@ -288,9 +285,9 @@ const ResultTabs = ({ result }) => {
               <div className="levels-section">
                 <h5>Take Profit Targets</h5>
                 <div className="levels-list">
-                  {result.targets?.map((target, idx) => (
+                  {(result?.targets || []).map((target, idx) => (
                     <div key={idx} className="level positive">
-                      T{idx + 1}: ${target?.toFixed(5)}
+                      T{idx + 1}: ${target?.toFixed(5) || "N/A"}
                     </div>
                   ))}
                 </div>
@@ -298,12 +295,14 @@ const ResultTabs = ({ result }) => {
               <div className="levels-section">
                 <h5>Stop Loss Levels</h5>
                 <div className="levels-list">
-                  {result.user_stoploss && (
-                    <div className="level negative">User SL: ${result.user_stoploss?.toFixed(5)}</div>
+                  {result?.user_stoploss && (
+                    <div className="level negative">
+                      User SL: ${result.user_stoploss?.toFixed(5) || "N/A"}
+                    </div>
                   )}
-                  {result.market_stoplosses?.map((sl, idx) => (
+                  {(result?.market_stoplosses || []).map((sl, idx) => (
                     <div key={idx} className="level negative">
-                      SL{idx + 1}: ${sl?.toFixed(5)}
+                      SL{idx + 1}: ${sl?.toFixed(5) || "N/A"}
                     </div>
                   ))}
                 </div>
@@ -317,26 +316,26 @@ const ResultTabs = ({ result }) => {
               <h4>Market Sentiment</h4>
               <div className="summary-item">
                 <span>Overall Trend:</span>{" "}
-                <strong className="trend">{result.market_trend?.toUpperCase()}</strong>
+                <strong className="trend">{result?.market_trend?.toUpperCase() || "N/A"}</strong>
               </div>
               <div className="confidence-meter">
                 <div className="meter-bar">
                   <div
                     className="meter-fill long"
-                    style={{ width: `${result.confidence_meter?.long}%` }}
+                    style={{ width: `${result?.confidence_meter?.long || 0}%` }}
                   >
-                    Long: {result.confidence_meter?.long}%
+                    Long: {result?.confidence_meter?.long || 0}%
                   </div>
                   <div
                     className="meter-fill short"
-                    style={{ width: `${result.confidence_meter?.short}%` }}
+                    style={{ width: `${result?.confidence_meter?.short || 0}%` }}
                   >
-                    Short: {result.confidence_meter?.short}%
+                    Short: {result?.confidence_meter?.short || 0}%
                   </div>
                 </div>
               </div>
               <div className="summary-item">
-                <em>{result.trend_comment || "No Comment"}</em>
+                <em>{result?.trend_comment || "No Comment"}</em>
               </div>
             </div>
           </div>
@@ -347,10 +346,12 @@ const ResultTabs = ({ result }) => {
               <h4>Detected Chart Patterns</h4>
               <div className="patterns-list">
                 <div>
-                  Candlesticks: {result.detected_patterns?.candlesticks?.join(", ") || "None Detected"}
+                  Candlesticks:{" "}
+                  {(result?.detected_patterns?.candlesticks || []).join(", ") || "None Detected"}
                 </div>
                 <div>
-                  Chart Patterns: {result.detected_patterns?.chart_patterns?.join(", ") || "None Detected"}
+                  Chart Patterns:{" "}
+                  {(result?.detected_patterns?.chart_patterns || []).join(", ") || "None Detected"}
                 </div>
               </div>
             </div>
@@ -361,7 +362,9 @@ const ResultTabs = ({ result }) => {
             <div className="result-card">
               <h4>Recommended Action</h4>
               <div className="action-recommend">
-                <strong className="trend">{result.recommended_action?.toUpperCase() || "HOLD"}</strong>
+                <strong className="trend">
+                  {result?.recommended_action?.toUpperCase() || "HOLD"}
+                </strong>
               </div>
             </div>
           </div>
@@ -376,57 +379,8 @@ const ResultTabs = ({ result }) => {
   );
 };
 
-// Recent History Component
-const RecentHistory = () => {
-  const [recentHistory, setRecentHistory] = useState([]);
-
-  useEffect(() => {
-    const loadRecentHistory = () => {
-      try {
-        const history = JSON.parse(localStorage.getItem('aivisorHistory') || '[]');
-        const threeDaysAgo = Date.now() - 3 * 24 * 60 * 60 * 1000;
-        const filtered = history.filter(h => h.timestamp > threeDaysAgo);
-        setRecentHistory(filtered.slice(0, 2));
-      } catch (err) {
-        console.error('Error loading history:', err);
-      }
-    };
-
-    loadRecentHistory();
-    const interval = setInterval(loadRecentHistory, 30000);
-    return () => clearInterval(interval);
-  }, []);
-
-  if (recentHistory.length === 0) return null;
-
-  return (
-    <div className="history-section">
-      <h3>Recent Analyses</h3>
-      <div className="history-list">
-        {recentHistory.map((item, idx) => {
-          const pl = parseFloat(item.result.profit_loss) || 0;
-          return (
-            <Link href="/history" key={idx} className="history-card">
-              <div className="history-preview">
-                <strong>{item.input.coin || 'Unknown'} {item.input.positionType || ''}</strong>
-                <span className="history-date">{new Date(item.timestamp).toLocaleDateString()}</span>
-                <div className="history-pl">
-                  <span>P/L: </span>
-                  <strong className={pl >= 0 ? "positive" : "negative"}>
-                    ${pl.toFixed(2)}
-                  </strong>
-                </div>
-              </div>
-            </Link>
-          );
-        })}
-      </div>
-      <Link href="/history">
-        <button className="cta-btn primary">View Full History</button>
-      </Link>
-    </div>
-  );
-};
+// Dynamically import RecentHistory to avoid SSR issues with localStorage
+const RecentHistory = dynamic(() => import("/components/RecentHistory"), { ssr: false });
 
 // FAQ Item Component
 const FAQItem = ({ question, answer }) => {
@@ -478,36 +432,41 @@ export default function Home() {
   const dashboardRef = useRef(null);
 
   useEffect(() => {
-    // Load analysis count from localStorage
-    const count = parseInt(localStorage.getItem('aivisorAnalysisCount') || '0');
-    setAnalysisCount(count);
+    if (typeof window !== "undefined") {
+      const count = parseInt(localStorage.getItem("aivisorAnalysisCount") || "0");
+      setAnalysisCount(count);
+    }
   }, []);
 
   const scrollToDashboard = () => {
-    dashboardRef.current?.scrollIntoView({ behavior: 'smooth' });
+    dashboardRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   const saveHistory = (input, resultData) => {
+    if (typeof window === "undefined") return; // Prevent server-side execution
     try {
-      const history = JSON.parse(localStorage.getItem('aivisorHistory') || '[]');
+      const history = JSON.parse(localStorage.getItem("aivisorHistory") || "[]");
       const item = { timestamp: Date.now(), input, result: resultData };
       history.unshift(item);
       const threeDaysAgo = Date.now() - 3 * 24 * 60 * 60 * 1000;
-      const filtered = history.filter(h => h.timestamp > threeDaysAgo);
-      localStorage.setItem('aivisorHistory', JSON.stringify(filtered.slice(0, 100)));
+      const filtered = history.filter((h) => h.timestamp > threeDaysAgo);
+      localStorage.setItem("aivisorHistory", JSON.stringify(filtered.slice(0, 100)));
     } catch (err) {
-      console.error('Error saving history:', err);
+      console.error("Error saving history:", err);
     }
   };
 
   const incrementAnalysisCount = () => {
-    const newCount = analysisCount + 1;
-    setAnalysisCount(newCount);
-    localStorage.setItem('aivisorAnalysisCount', newCount.toString());
+    if (typeof window !== "undefined") {
+      const newCount = analysisCount + 1;
+      setAnalysisCount(newCount);
+      localStorage.setItem("aivisorAnalysisCount", newCount.toString());
+    }
   };
 
   const submitData = async () => {
-    // Check analysis limit for non-logged-in users
+    if (typeof window === "undefined") return; // Prevent server-side execution
+
     if (!user && analysisCount >= 2) {
       setShowLoginPopup(true);
       return;
@@ -576,7 +535,10 @@ export default function Home() {
     <>
       <Head>
         <title>AIVISOR: Neural Crypto Analytics</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+        />
         <meta name="description" content="AI-powered crypto position analytics for traders." />
         <link rel="manifest" href="/manifest.json" />
         <link
@@ -600,7 +562,9 @@ export default function Home() {
             <Link href="/login">Login</Link>
           </nav>
           <div className="header-actions">
-            <span className="user-greeting">{user ? `Hello, ${user.email.split('@')[0]}` : "Hello, Trader"}</span>
+            <span className="user-greeting">
+              {user ? `Hello, ${user.email.split("@")[0]}` : "Hello, Trader"}
+            </span>
             <FaUserCircle
               className="profile-icon"
               onClick={() => setShowProfile(true)}
@@ -616,7 +580,8 @@ export default function Home() {
         <div className="mission-card">
           <h2>Execute Neural Analysis</h2>
           <p>
-            AIVISOR harnesses xAI-grade models to process live market data, technical indicators, and sentiment for precise position insights. <strong>Public Beta: Live</strong>
+            AIVISOR harnesses xAI-grade models to process live market data, technical indicators, and
+            sentiment for precise position insights. <strong>Public Beta: Live</strong>
           </p>
         </div>
       </section>
@@ -1731,4 +1696,10 @@ export default function Home() {
       `}</style>
     </>
   );
+}
+
+export async function getStaticProps() {
+  return {
+    props: {},
+  };
 }
