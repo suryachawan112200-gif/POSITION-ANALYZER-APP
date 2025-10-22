@@ -1,13 +1,18 @@
-
 import { useEffect, useState } from "react";
 import Head from "next/head";
 import Link from "next/link";
-import { FaUserCircle, FaCheckCircle, FaTimesCircle } from "react-icons/fa";
+import { FaUserCircle, FaCheckCircle, FaTimesCircle, FaAngleDown } from "react-icons/fa";
 import ProfileModal from "/components/ProfileModal";
 
-// ResultTabs Component
+// ResultTabs Component (unchanged for now, can be enhanced later)
 const ResultTabs = ({ result, onClose }) => {
   const [activeTab, setActiveTab] = useState("summary");
+
+  const isTgtHit = result.targets?.some((tgt) => result.currentPrice >= tgt);
+  const isSlHit =
+    (result.user_stoploss && result.currentPrice <= result.user_stoploss) ||
+    result.market_stoplosses?.some((sl) => result.currentPrice <= sl);
+  const firstHit = isTgtHit ? "tgt" : isSlHit ? "sl" : null;
 
   return (
     <div className="result-overlay">
@@ -69,7 +74,6 @@ const ResultTabs = ({ result, onClose }) => {
                         className={
                           result.tgtHit ? "positive" : result.slHit ? "negative" : ""
                         }
-                        style={{ color: "var(--text-primary)", fontWeight: "bold" }}
                       >
                         {result.tgtHit
                           ? "Target Hit"
@@ -89,23 +93,21 @@ const ResultTabs = ({ result, onClose }) => {
                   <div className="levels-section">
                     <h5>Take Profit Targets</h5>
                     <div className="levels-list">
-                      {result.targets?.length > 0 ? (
-                        result.targets.map((target, idx) => (
+                      {result.targets
+                        ?.filter((v, i, a) => a.indexOf(v) === i)
+                        .map((target, idx) => (
                           <div
                             key={idx}
                             className={`level positive ${
-                              result.currentPrice >= target ? "hit" : ""
+                              firstHit === "tgt" && idx === 0 ? "hit" : ""
                             }`}
                           >
                             T{idx + 1}: ${target?.toFixed(5) ?? "N/A"}
-                            {result.currentPrice >= target && (
+                            {firstHit === "tgt" && idx === 0 && (
                               <FaCheckCircle className="status-icon" />
                             )}
                           </div>
-                        ))
-                      ) : (
-                        <div>No Targets Available</div>
-                      )}
+                        )) || <div className="level">No Targets Available</div>}
                     </div>
                   </div>
                   <div className="levels-section">
@@ -114,32 +116,35 @@ const ResultTabs = ({ result, onClose }) => {
                       {result.user_stoploss && (
                         <div
                           className={`level negative ${
-                            result.currentPrice <= result.user_stoploss ? "hit" : ""
+                            firstHit === "sl" && result.currentPrice <= result.user_stoploss
+                              ? "hit"
+                              : ""
                           }`}
                         >
                           User SL: ${result.user_stoploss?.toFixed(5) ?? "N/A"}
-                          {result.currentPrice <= result.user_stoploss && (
-                            <FaTimesCircle className="status-icon" />
-                          )}
+                          {firstHit === "sl" &&
+                            result.currentPrice <= result.user_stoploss && (
+                              <FaTimesCircle className="status-icon" />
+                            )}
                         </div>
                       )}
-                      {result.market_stoplosses?.length > 0 ? (
-                        result.market_stoplosses.map((sl, idx) => (
+                      {result.market_stoplosses
+                        ?.filter((v, i, a) => a.indexOf(v) === i)
+                        .map((sl, idx) => (
                           <div
                             key={idx}
                             className={`level negative ${
-                              result.currentPrice <= sl ? "hit" : ""
+                              firstHit === "sl" && idx === 0 && result.currentPrice <= sl
+                                ? "hit"
+                                : ""
                             }`}
                           >
                             SL{idx + 1}: ${sl?.toFixed(5) ?? "N/A"}
-                            {result.currentPrice <= sl && (
+                            {firstHit === "sl" && idx === 0 && result.currentPrice <= sl && (
                               <FaTimesCircle className="status-icon" />
                             )}
                           </div>
-                        ))
-                      ) : (
-                        <div>No Stop Losses Available</div>
-                      )}
+                        )) || <div className="level">No Stop Losses Available</div>}
                     </div>
                   </div>
                 </div>
@@ -173,6 +178,7 @@ export default function History() {
   const [selectedResult, setSelectedResult] = useState(null);
   const [showProfile, setShowProfile] = useState(false);
   const [totalAnalysis, setTotalAnalysis] = useState({ tgtHit: 0, slHit: 0 });
+  const [expandedItem, setExpandedItem] = useState(null); // Track expanded timeline item
 
   useEffect(() => {
     try {
@@ -184,7 +190,7 @@ export default function History() {
       setHistory([]);
     }
 
-    const interval = setInterval(() => checkTradeStatus(), 300000); // 5 minutes
+    const interval = setInterval(() => checkTradeStatus(), 300000); // 5-minute check
     return () => clearInterval(interval);
   }, []);
 
@@ -204,31 +210,33 @@ export default function History() {
     const updatedHistory = [...history];
     for (let item of updatedHistory) {
       const result = item.result;
-      try {
-        const response = await fetch("/api/checkTradeStatus", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            coin: result.coin,
-            entryPrice: result.entry_price,
-            targets: result.targets,
-            userStoploss: result.user_stoploss,
-            marketStoplosses: result.market_stoplosses,
-          }),
-        });
-        const data = await response.json();
-        if (data.currentPrice) {
-          result.currentPrice = data.currentPrice;
-          result.tgtHit = data.tgtHit;
-          result.slHit = data.slHit;
-          if (result.tgtHit || result.slHit) {
-            localStorage.setItem("aivisorHistory", JSON.stringify(updatedHistory));
-            setHistory(updatedHistory);
-            updateAnalysis(updatedHistory);
+      if (!result.tgtHit && !result.slHit) {
+        try {
+          const response = await fetch("/api/checkTradeStatus", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              coin: result.coin,
+              entryPrice: result.entry_price,
+              targets: result.targets,
+              userStoploss: result.user_stoploss,
+              marketStoplosses: result.market_stoplosses,
+            }),
+          });
+          const data = await response.json();
+          if (data.currentPrice) {
+            result.currentPrice = data.currentPrice;
+            result.tgtHit = data.tgtHit;
+            result.slHit = data.slHit;
+            if (result.tgtHit || result.slHit) {
+              localStorage.setItem("aivisorHistory", JSON.stringify(updatedHistory));
+              setHistory(updatedHistory);
+              updateAnalysis(updatedHistory);
+            }
           }
+        } catch (err) {
+          console.error("Error checking trade status:", err);
         }
-      } catch (err) {
-        console.error("Error checking trade status:", err);
       }
     }
   };
@@ -245,6 +253,10 @@ export default function History() {
     localStorage.removeItem("aivisorHistory");
     setHistory([]);
     setTotalAnalysis({ tgtHit: 0, slHit: 0 });
+  };
+
+  const toggleExpand = (index) => {
+    setExpandedItem(expandedItem === index ? null : index);
   };
 
   return (
@@ -284,21 +296,11 @@ export default function History() {
           <div className="analysis-panel">
             <div className="analysis-item">
               <span>Total Targets Hit:</span>
-              <strong
-                className="positive"
-                style={{ color: "var(--text-primary)", fontWeight: "bold" }}
-              >
-                {totalAnalysis.tgtHit}
-              </strong>
+              <strong className="positive">{totalAnalysis.tgtHit}</strong>
             </div>
             <div className="analysis-item">
               <span>Total Stop Losses Hit:</span>
-              <strong
-                className="negative"
-                style={{ color: "var(--text-primary)", fontWeight: "bold" }}
-              >
-                {totalAnalysis.slHit}
-              </strong>
+              <strong className="negative">{totalAnalysis.slHit}</strong>
             </div>
           </div>
         </section>
@@ -319,14 +321,13 @@ export default function History() {
             </div>
             {history.map((item, idx) => (
               <div key={idx} className="timeline-item">
-                <div className="timeline-dot"></div>
                 <div
                   className="timeline-card"
-                  onClick={() => handleSelectHistory(item.result)}
+                  onClick={() => toggleExpand(idx)}
                   role="button"
                   tabIndex={0}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter") handleSelectHistory(item.result);
+                    if (e.key === "Enter") toggleExpand(idx);
                   }}
                 >
                   <div className="timeline-content">
@@ -376,8 +377,14 @@ export default function History() {
                         </strong>
                       </div>
                     </div>
+                    <FaAngleDown className="expand-icon" />
                   </div>
                 </div>
+                {expandedItem === idx && (
+                  <div className="history-details">
+                    <ResultTabs result={item.result} onClose={() => toggleExpand(idx)} />
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -391,7 +398,7 @@ export default function History() {
 
       <style jsx>{`
         :root {
-          --bg-primary: #FFFFFF;
+          --bg-primary: #ff6f6fff;
           --accent-blue: #4B9BFF;
           --accent-purple: #7A5CFF;
           --gradient: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
@@ -399,20 +406,13 @@ export default function History() {
           --text-muted: #6B7280;
           --success: #3ED598;
           --error: #EF4444;
-          --border-soft: #6599e8ff;
+          --border-soft: #0b0d10ff;
           --shadow-subtle: 0 2px 4px rgba(0, 0, 0, 0.05);
         }
 
         html,
         body,
-        .history-page,
-        .header,
-        .hero-section,
-        .timeline,
-        .no-history-card,
-        .result-panel,
-        .result-card,
-        .tab-content {
+        .history-page {
           background: var(--bg-primary);
         }
 
@@ -426,12 +426,17 @@ export default function History() {
           max-width: 1200px;
           margin: 0 auto;
           padding: 2rem;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
         }
 
         .header {
+          width: 100%;
           padding: 1.5rem 0;
           border-bottom: 1px solid var(--border-soft);
           box-shadow: var(--shadow-subtle);
+          background: var(--bg-primary);
         }
 
         .header-content {
@@ -439,6 +444,8 @@ export default function History() {
           justify-content: space-between;
           align-items: center;
           padding: 0 2rem;
+          max-width: 1200px;
+          margin: 0 auto;
         }
 
         .logo-section {
@@ -493,11 +500,14 @@ export default function History() {
         }
 
         .hero-section {
+          width: 100%;
           text-align: center;
           padding: 2rem;
           border-radius: 1rem;
           border: 1px solid var(--border-soft);
           margin: 2rem 0;
+          background: var(--bg-primary);
+          box-shadow: var(--shadow-subtle);
         }
 
         h1 {
@@ -509,11 +519,6 @@ export default function History() {
           margin-bottom: 1rem;
         }
 
-        .subtitle {
-          color: var(--text-muted);
-          font-size: 1rem;
-        }
-
         .analysis-panel {
           display: flex;
           justify-content: center;
@@ -522,11 +527,12 @@ export default function History() {
         }
 
         .analysis-item {
-          background: rgba(114, 170, 234, 0.9);
+          background: rgba(114, 170, 234, 0.1);
           padding: 1rem;
           border-radius: 0.5rem;
           border: 1px solid var(--border-soft);
           box-shadow: var(--shadow-subtle);
+          color: var(--text-primary);
         }
 
         .analysis-item span {
@@ -535,22 +541,24 @@ export default function History() {
         }
 
         .no-history-card {
+          width: 100%;
           text-align: center;
           padding: 2rem;
           border-radius: 1rem;
           border: 1px solid var(--border-soft);
           margin: 2rem 0;
-          background: rgba(117, 155, 227, 0.9);
+          background: rgba(117, 155, 227, 0.1);
           box-shadow: var(--shadow-subtle);
+          color: var(--text-primary);
         }
 
         .no-history-card p {
-          color: var(--text-primary);
           font-size: 1rem;
           margin-bottom: 1.5rem;
         }
 
         .timeline {
+          width: 100%;
           padding: 2rem 0;
         }
 
@@ -561,30 +569,23 @@ export default function History() {
         }
 
         .timeline-item {
-          position: relative;
-          margin-bottom: 2rem;
-          padding-left: 2rem;
-        }
-
-        .timeline-dot {
-          position: absolute;
-          left: 0;
-          top: 0.75rem;
-          width: 12px;
-          height: 12px;
-          background: var(--gradient);
-          border-radius: 50%;
-          box-shadow: 0 0 5px rgba(75, 155, 255, 0.5);
+          width: 100%;
+          margin-bottom: 1.5rem;
         }
 
         .timeline-card {
+          width: 100%;
           padding: 1.5rem;
           border-radius: 1rem;
           border: 1px solid var(--border-soft);
           cursor: pointer;
           transition: transform 0.3s, box-shadow 0.3s;
-          background: rgba(114, 126, 233, 0.9);
+          background: rgba(114, 126, 233, 0.1);
           box-shadow: var(--shadow-subtle);
+          color: var(--text-primary);
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
         }
 
         .timeline-card:hover {
@@ -593,9 +594,7 @@ export default function History() {
         }
 
         .timeline-content {
-          display: flex;
-          flex-direction: column;
-          gap: 1rem;
+          flex-grow: 1;
         }
 
         .timeline-header {
@@ -603,6 +602,7 @@ export default function History() {
           justify-content: space-between;
           align-items: center;
           font-size: 1.1rem;
+          margin-bottom: 0.5rem;
         }
 
         .timeline-header strong {
@@ -617,15 +617,37 @@ export default function History() {
         .timeline-details {
           display: grid;
           grid-template-columns: 1fr 1fr;
-          gap: 1rem;
+          gap: 0.5rem;
+          font-size: 0.9rem;
         }
 
         .detail-item {
-          font-size: 0.9rem;
+          color: var(--text-primary);
         }
 
         .detail-item span {
           color: var(--text-muted);
+        }
+
+        .expand-icon {
+          font-size: 1.2rem;
+          color: var(--text-muted);
+          transition: transform 0.3s;
+        }
+
+        .timeline-card:hover .expand-icon {
+          transform: rotate(180deg);
+        }
+
+        .history-details {
+          width: 100%;
+          margin-top: 1rem;
+          animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
         }
 
         .positive {
@@ -636,11 +658,10 @@ export default function History() {
           color: var(--error);
         }
 
-        .trend {
+        .highlight {
           background: var(--gradient);
           -webkit-background-clip: text;
           color: transparent;
-          font-size: 1.2rem;
         }
 
         .result-overlay {
@@ -673,7 +694,7 @@ export default function History() {
           top: 1rem;
           right: 1rem;
           background: var(--error);
-          color: #57abe7ff;
+          color: #000000ff;
           border: none;
           border-radius: 50%;
           width: 30px;
@@ -718,7 +739,7 @@ export default function History() {
           padding: 1.5rem;
           border-radius: 0.75rem;
           border: 1px solid var(--border-soft);
-          background: rgba(255, 255, 255, 0.9);
+          background: rgba(0, 0, 0, 0.9);
           box-shadow: var(--shadow-subtle);
         }
 
@@ -743,12 +764,6 @@ export default function History() {
           color: var(--text-muted);
         }
 
-        .highlight {
-          background: var(--gradient);
-          -webkit-background-clip: text;
-          color: transparent;
-        }
-
         .levels-section {
           margin: 1rem 0;
         }
@@ -763,7 +778,7 @@ export default function History() {
         .levels-list {
           display: flex;
           flex-direction: column;
-          gap: 0.75rem;
+          gap: 0.5rem;
         }
 
         .level {
@@ -786,12 +801,13 @@ export default function History() {
         }
 
         .level.hit {
+          background: rgba(0, 0, 0, 0.05);
           font-weight: 600;
         }
 
         .status-icon {
-          font-size: 1rem;
-          margin-left: 0.5rem;
+          color: inherit;
+          margin-left: 0.75rem;
         }
 
         .action-recommend {
@@ -820,7 +836,7 @@ export default function History() {
 
         .cta-btn.primary {
           background: var(--gradient);
-          color: #FFFFFF;
+          color: #4b65e3ff;
         }
 
         .cta-btn.secondary {

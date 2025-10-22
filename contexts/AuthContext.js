@@ -25,11 +25,26 @@ export function AuthProvider({ children }) {
     throw new Error("No user is logged in");
   };
 
+  // Provide setUser in the context value
+  const value = {
+    user,
+    setUser, // Add setUser to the context
+    loading,
+    logout,
+    changePassword,
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, logout, changePassword }}>
-      {!loading && children}
+    <AuthContext.Provider value={value}>
+      {!loading && children} {/* Render children only after loading */}
     </AuthContext.Provider>
   );
 }
 
-export const useAuth = () => useContext(AuthContext);
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
+};

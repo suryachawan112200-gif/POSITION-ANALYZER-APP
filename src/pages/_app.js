@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { app, initializeApp } from "firebase/app";
+import { initializeApp } from "firebase/app";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { AuthProvider, useAuth } from "/contexts/AuthContext"; // Adjust path
 
@@ -26,13 +26,17 @@ function initializeFirebase() {
 }
 
 function MyApp({ Component, pageProps }) {
-  const { setUser } = useAuth(); // This will work if wrapped in AuthProvider
+  const { setUser } = useAuth() || {}; // Fallback to empty object if undefined
 
   useEffect(() => {
     initializeFirebase();
     if (auth) {
       const unsubscribe = onAuthStateChanged(auth, (user) => {
-        setUser(user);
+        if (setUser && typeof setUser === "function") {
+          setUser(user);
+        } else {
+          console.error("setUser is not a function, check AuthContext setup");
+        }
       });
       return () => unsubscribe();
     }
