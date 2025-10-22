@@ -1,20 +1,35 @@
 import { useAuth } from "../contexts/AuthContext";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 
 export default function ProfileModal({ onClose }) {
-  const { user, logout, changePassword } = useAuth();
-  const [newPassword, setNewPassword] = useState("");
+  const { user, logout } = useAuth();
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
 
-  const handleChangePassword = async () => {
+  useEffect(() => {
+    if (user) {
+      setName(user.name || "");
+      setPhone(user.phone || "");
+      setEmail(user.email || "");
+    }
+  }, [user]);
+
+  const handleSaveProfile = async () => {
     setError(null);
     setSuccess(null);
     try {
-      await changePassword(newPassword);
-      setSuccess("Password changed successfully!");
-      setNewPassword("");
+      // Check if updateProfile is available
+      if (!updateProfile || typeof updateProfile !== "function") {
+        throw new Error("Profile update is not supported at this time.");
+      }
+      await updateProfile({ name, phone, email });
+      setSuccess("Profile updated successfully!");
+      setIsEditing(false);
     } catch (err) {
       setError(err.message);
     }
@@ -35,12 +50,12 @@ export default function ProfileModal({ onClose }) {
         <button className="close-btn" onClick={onClose}>
           ×
         </button>
-        <div className="logo-section">
-          <span className="logo-icon">🤖</span>
-          <h2>Profile</h2>
-        </div>
         {!user ? (
           <>
+            <div className="logo-section">
+              <span className="logo-icon">🤖</span>
+              <h2>Profile</h2>
+            </div>
             <p>You are not logged in.</p>
             <Link href="/login">
               <button className="cta-btn primary">Login / Sign Up 🔐</button>
@@ -48,20 +63,51 @@ export default function ProfileModal({ onClose }) {
           </>
         ) : (
           <>
-            <div className="user-info">
-              <p><strong>Email:</strong> {user.email}</p>
+            <div className="profile-header">
+              <div className="profile-icon">
+                <span className="user-initial">
+                  {name ? name.charAt(0).toUpperCase() : "U"}
+                </span>
+                <div className="user-details">
+                  <h3>{name || "User"}</h3>
+                  {phone && <p>{phone}</p>}
+                </div>
+              </div>
             </div>
-            <div className="input-group">
-              <input
-                type="password"
-                placeholder="New Password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-              />
-              <button onClick={handleChangePassword} className="cta-btn primary">
-                Change Password 🔄
+            {isEditing ? (
+              <>
+                <div className="input-group">
+                  <input
+                    type="text"
+                    placeholder="Name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                  />
+                  <input
+                    type="tel"
+                    placeholder="Phone (Optional)"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                  />
+                  <input
+                    type="email"
+                    placeholder="Email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
+                  <button onClick={handleSaveProfile} className="cta-btn primary">
+                    Save Changes ✅
+                  </button>
+                </div>
+              </>
+            ) : (
+              <button
+                onClick={() => setIsEditing(true)}
+                className="cta-btn secondary edit-btn"
+              >
+                Edit Profile ✏️
               </button>
-            </div>
+            )}
             <button onClick={handleLogout} className="cta-btn secondary">
               Logout 🚪
             </button>
@@ -99,13 +145,14 @@ export default function ProfileModal({ onClose }) {
         }
 
         .profile-modal {
-          background: var(--bg-primary) !important;
+          background: var(--bg-primary);
           padding: 2rem;
           border-radius: 1rem;
           border: 1px solid var(--border-soft);
           box-shadow: var(--shadow-subtle);
           max-width: 400px;
           width: 90%;
+          text-align: center;
         }
 
         .close-btn {
@@ -146,13 +193,49 @@ export default function ProfileModal({ onClose }) {
           color: transparent;
         }
 
-        .user-info {
-          margin-bottom: 1rem;
+        .profile-header {
+          margin-bottom: 1.5rem;
         }
 
-        .user-info p {
-          font-size: 0.9rem;
+        .profile-icon {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: var(--gradient);
+          border-radius: 50%;
+          width: 80px;
+          height: 80px;
+          margin: 0 auto 1rem;
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+          transition: transform 0.3s;
+        }
+
+        .profile-icon:hover {
+          transform: scale(1.1);
+        }
+
+        .user-initial {
+          font-size: 2.5rem;
+          color: #FFFFFF;
+          font-weight: 700;
+          text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+        }
+
+        .user-details {
           color: var(--text-primary);
+          text-align: center;
+        }
+
+        .user-details h3 {
+          font-size: 1.2rem;
+          font-weight: 600;
+          margin: 0;
+        }
+
+        .user-details p {
+          font-size: 0.9rem;
+          color: var(--text-muted);
+          margin: 0;
         }
 
         .input-group {
@@ -201,6 +284,10 @@ export default function ProfileModal({ onClose }) {
           transform: scale(1.05);
         }
 
+        .edit-btn {
+          margin-top: 1rem;
+        }
+
         .error {
           color: var(--error);
           font-size: 0.8rem;
@@ -219,8 +306,15 @@ export default function ProfileModal({ onClose }) {
           .profile-modal {
             padding: 1rem;
           }
-          h2 {
-            font-size: 1.5rem;
+          .profile-icon {
+            width: 60px;
+            height: 60px;
+          }
+          .user-initial {
+            font-size: 2rem;
+          }
+          .user-details h3 {
+            font-size: 1rem;
           }
           input,
           .cta-btn {

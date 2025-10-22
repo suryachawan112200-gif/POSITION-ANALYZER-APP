@@ -1,10 +1,9 @@
 import { useEffect, useState } from "react";
 import Head from "next/head";
 import Link from "next/link";
-import { FaUserCircle, FaCheckCircle, FaTimesCircle, FaAngleDown } from "react-icons/fa";
-import ProfileModal from "/components/ProfileModal";
+import { FaCheckCircle, FaTimesCircle, FaAngleDown } from "react-icons/fa";
 
-// ResultTabs Component (unchanged for now, can be enhanced later)
+// ResultTabs Component
 const ResultTabs = ({ result, onClose }) => {
   const [activeTab, setActiveTab] = useState("summary");
 
@@ -176,9 +175,8 @@ const ResultTabs = ({ result, onClose }) => {
 export default function History() {
   const [history, setHistory] = useState([]);
   const [selectedResult, setSelectedResult] = useState(null);
-  const [showProfile, setShowProfile] = useState(false);
   const [totalAnalysis, setTotalAnalysis] = useState({ tgtHit: 0, slHit: 0 });
-  const [expandedItem, setExpandedItem] = useState(null); // Track expanded timeline item
+  const [expandedItem, setExpandedItem] = useState(null);
 
   useEffect(() => {
     try {
@@ -190,19 +188,20 @@ export default function History() {
       setHistory([]);
     }
 
-    const interval = setInterval(() => checkTradeStatus(), 300000); // 5-minute check
+    const interval = setInterval(() => checkTradeStatus(), 300000);
     return () => clearInterval(interval);
   }, []);
 
   const updateAnalysis = (historyData) => {
-    const analysis = historyData.reduce(
-      (acc, item) => {
-        if (item.result.tgtHit) acc.tgtHit += 1;
-        if (item.result.slHit) acc.slHit += 1;
-        return acc;
-      },
-      { tgtHit: 0, slHit: 0 }
-    );
+    const totalTrades = historyData.length;
+    const tgtHits = historyData.filter((item) => item.result.tgtHit).length;
+    const tgtAccuracy = totalTrades > 0 ? ((tgtHits / totalTrades) * 100).toFixed(2) : 0;
+    const analysis = {
+      totalTrades,
+      tgtAccuracy,
+      tgtHit: tgtHits,
+      slHit: historyData.filter((item) => item.result.slHit).length,
+    };
     setTotalAnalysis(analysis);
   };
 
@@ -252,7 +251,7 @@ export default function History() {
   const handleClearHistory = () => {
     localStorage.removeItem("aivisorHistory");
     setHistory([]);
-    setTotalAnalysis({ tgtHit: 0, slHit: 0 });
+    setTotalAnalysis({ totalTrades: 0, tgtAccuracy: 0, tgtHit: 0, slHit: 0 });
   };
 
   const toggleExpand = (index) => {
@@ -262,7 +261,7 @@ export default function History() {
   return (
     <>
       <Head>
-        <title>AIVISOR: Trade History</title>
+        <title>Trade History</title>
         <meta name="description" content="View your past trade analyses." />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <link
@@ -271,38 +270,24 @@ export default function History() {
         />
       </Head>
       <div className="history-page">
-        <header className="header">
-          <div className="header-content">
-            <div className="logo-section">
-              <div className="logo-icon">🤖</div>
-              <span className="logo-text">AIVISOR</span>
+        <section className="stats-section">
+          <div className="stats-panel">
+            <div className="stats-item">
+              <span>Total Trades:</span>
+              <strong>{totalAnalysis.totalTrades}</strong>
             </div>
-            <nav className="nav-links">
-              <Link href="/">Home</Link>
-              <Link href="/support">Support</Link>
-              <Link href="/login">Login</Link>
-            </nav>
-            <div className="header-actions">
-              <FaUserCircle
-                className="profile-icon"
-                onClick={() => setShowProfile(true)}
-              />
+            <div className="stats-item">
+              <span>Target Hit Accuracy:</span>
+              <strong>{totalAnalysis.tgtAccuracy}%</strong>
             </div>
-          </div>
-        </header>
-
-        <section className="hero-section">
-          <h1>Trade History</h1>
-          <div className="analysis-panel">
-            <div className="analysis-item">
+            <div className="stats-item">
               <span>Total Targets Hit:</span>
               <strong className="positive">{totalAnalysis.tgtHit}</strong>
             </div>
-            <div className="analysis-item">
-              <span>Total Stop Losses Hit:</span>
-              <strong className="negative">{totalAnalysis.slHit}</strong>
-            </div>
           </div>
+          <Link href="/">
+            <button className="cta-btn back-btn">⬅ Back</button>
+          </Link>
         </section>
 
         {history.length === 0 ? (
@@ -393,113 +378,10 @@ export default function History() {
         {selectedResult && (
           <ResultTabs result={selectedResult} onClose={handleCloseResult} />
         )}
-        {showProfile && <ProfileModal onClose={() => setShowProfile(false)} />}
       </div>
 
       <style jsx>{`
-        :root {
-          --bg-primary: #ff6f6fff;
-          --accent-blue: #4B9BFF;
-          --accent-purple: #7A5CFF;
-          --gradient: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
-          --text-primary: #1A1A1A;
-          --text-muted: #6B7280;
-          --success: #3ED598;
-          --error: #EF4444;
-          --border-soft: #0b0d10ff;
-          --shadow-subtle: 0 2px 4px rgba(0, 0, 0, 0.05);
-        }
-
-        html,
-        body,
-        .history-page {
-          background: var(--bg-primary);
-        }
-
-        body {
-          font-family: "Inter", sans-serif;
-          color: var(--text-primary);
-          line-height: 1.6;
-        }
-
-        .history-page {
-          max-width: 1200px;
-          margin: 0 auto;
-          padding: 2rem;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-        }
-
-        .header {
-          width: 100%;
-          padding: 1.5rem 0;
-          border-bottom: 1px solid var(--border-soft);
-          box-shadow: var(--shadow-subtle);
-          background: var(--bg-primary);
-        }
-
-        .header-content {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 0 2rem;
-          max-width: 1200px;
-          margin: 0 auto;
-        }
-
-        .logo-section {
-          display: flex;
-          align-items: center;
-          gap: 1rem;
-        }
-
-        .logo-icon {
-          font-size: 2rem;
-        }
-
-        .logo-text {
-          font-weight: 800;
-          font-size: 1.8rem;
-          background: var(--gradient);
-          -webkit-background-clip: text;
-          color: transparent;
-        }
-
-        .nav-links {
-          display: flex;
-          gap: 1.5rem;
-        }
-
-        .nav-links a {
-          color: var(--text-muted);
-          text-decoration: none;
-          font-size: 1rem;
-          transition: color 0.3s;
-        }
-
-        .nav-links a:hover {
-          color: var(--accent-blue);
-        }
-
-        .header-actions {
-          display: flex;
-          align-items: center;
-          gap: 1rem;
-        }
-
-        .profile-icon {
-          font-size: 2rem;
-          color: var(--text-muted);
-          cursor: pointer;
-          transition: color 0.3s;
-        }
-
-        .profile-icon:hover {
-          color: var(--accent-blue);
-        }
-
-        .hero-section {
+        .stats-section {
           width: 100%;
           text-align: center;
           padding: 2rem;
@@ -510,23 +392,14 @@ export default function History() {
           box-shadow: var(--shadow-subtle);
         }
 
-        h1 {
-          font-size: 2.5rem;
-          font-weight: 800;
-          background: var(--gradient);
-          -webkit-background-clip: text;
-          color: transparent;
-          margin-bottom: 1rem;
-        }
-
-        .analysis-panel {
+        .stats-panel {
           display: flex;
           justify-content: center;
           gap: 2rem;
-          margin-top: 1rem;
+          margin-bottom: 1.5rem;
         }
 
-        .analysis-item {
+        .stats-item {
           background: rgba(114, 170, 234, 0.1);
           padding: 1rem;
           border-radius: 0.5rem;
@@ -535,37 +408,37 @@ export default function History() {
           color: var(--text-primary);
         }
 
-        .analysis-item span {
+        .stats-item span {
           color: var(--text-muted);
           font-size: 0.9rem;
         }
 
-        .no-history-card {
-          width: 100%;
-          text-align: center;
-          padding: 2rem;
-          border-radius: 1rem;
-          border: 1px solid var(--border-soft);
-          margin: 2rem 0;
-          background: rgba(117, 155, 227, 0.1);
-          box-shadow: var(--shadow-subtle);
+        .stats-item strong {
           color: var(--text-primary);
+          font-weight: bold;
         }
 
-        .no-history-card p {
+        .back-btn {
+          padding: 0.75rem 1.5rem;
+          border: none;
+          border-radius: 0.5rem;
           font-size: 1rem;
-          margin-bottom: 1.5rem;
+          cursor: pointer;
+          transition: transform 0.3s, background 0.3s;
+          background: var(--bg-primary);
+          color: var(--text-primary);
+          border: 1px solid var(--border-soft);
+        }
+
+        .back-btn:hover {
+          transform: scale(1.05);
+          background: var(--accent-blue);
+          color: #FFFFFF;
         }
 
         .timeline {
           width: 100%;
           padding: 2rem 0;
-        }
-
-        .timeline-controls {
-          display: flex;
-          justify-content: flex-end;
-          margin-bottom: 1.5rem;
         }
 
         .timeline-item {
@@ -694,7 +567,7 @@ export default function History() {
           top: 1rem;
           right: 1rem;
           background: var(--error);
-          color: #000000ff;
+          color: #FFFFFF;
           border: none;
           border-radius: 50%;
           width: 30px;
@@ -739,7 +612,7 @@ export default function History() {
           padding: 1.5rem;
           border-radius: 0.75rem;
           border: 1px solid var(--border-soft);
-          background: rgba(0, 0, 0, 0.9);
+          background: rgba(255, 255, 255, 0.9);
           box-shadow: var(--shadow-subtle);
         }
 
@@ -762,6 +635,11 @@ export default function History() {
 
         .summary-item span {
           color: var(--text-muted);
+        }
+
+        .summary-item strong {
+          color: var(--text-primary);
+          font-weight: bold;
         }
 
         .levels-section {
@@ -836,7 +714,7 @@ export default function History() {
 
         .cta-btn.primary {
           background: var(--gradient);
-          color: #4b65e3ff;
+          color: #FFFFFF;
         }
 
         .cta-btn.secondary {
@@ -850,20 +728,7 @@ export default function History() {
         }
 
         @media (max-width: 768px) {
-          .history-page {
-            padding: 1rem;
-          }
-          .header-content {
-            flex-direction: column;
-            gap: 1rem;
-          }
-          .nav-links {
-            display: none;
-          }
-          h1 {
-            font-size: 2rem;
-          }
-          .analysis-panel {
+          .stats-panel {
             flex-direction: column;
             gap: 1rem;
           }

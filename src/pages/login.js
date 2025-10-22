@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { auth } from "/lib/firebase";
 import {
@@ -6,6 +5,8 @@ import {
   signInWithEmailAndPassword,
   GoogleAuthProvider,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   sendEmailVerification,
   sendPasswordResetEmail,
   onAuthStateChanged,
@@ -13,6 +14,11 @@ import {
 import { useRouter } from "next/router";
 import Head from "next/head";
 import { FaEnvelope, FaLock, FaGoogle, FaRocket, FaShieldAlt, FaKey } from "react-icons/fa";
+
+// Helper to detect mobile
+const isMobile = () => {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+};
 
 // Logo font style matching index.js
 const logoFont = {
@@ -44,6 +50,28 @@ export default function Login() {
     } else if (showVerificationMessage && verificationTimer === 0) {
       router.push("/login");
     }
+
+    // Handle redirect result for mobile Google sign-in
+    const handleRedirectResult = async () => {
+      try {
+        const result = await getRedirectResult(auth);
+        if (result) {
+          const user = result.user;
+          if (user.emailVerified) {
+            setSuccess("Logged in with Google! Redirecting...");
+            setTimeout(() => router.push("/"), 1500);
+          } else {
+            setError("Google account email is not verified. Please verify it with Google first.");
+            await auth.signOut();
+          }
+        }
+      } catch (err) {
+        console.error("Redirect result error:", err);
+        setError(err.message || "Google sign-in failed. Please try again.");
+      }
+    };
+
+    handleRedirectResult();
     return () => clearInterval(timerInterval);
   }, [showVerificationMessage, verificationTimer, router]);
 
@@ -82,14 +110,24 @@ export default function Login() {
     setSuccess(null);
     setLoading(true);
     try {
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-      if (user.emailVerified) {
-        setSuccess("Logged in with Google! Redirecting...");
-        setTimeout(() => router.push("/"), 1500);
+      const provider = new GoogleAuthProvider();
+      provider.addScope("profile");
+      provider.addScope("email");
+
+      if (isMobile()) {
+        // Use redirect for mobile to avoid popup issues
+        await signInWithRedirect(auth, provider);
       } else {
-        setError("Google account email is not verified. Please verify it with Google first.");
-        auth.signOut();
+        // Use popup for desktop
+        const result = await signInWithPopup(auth, provider);
+        const user = result.user;
+        if (user.emailVerified) {
+          setSuccess("Logged in with Google! Redirecting...");
+          setTimeout(() => router.push("/"), 1500);
+        } else {
+          setError("Google account email is not verified. Please verify it with Google first.");
+          await auth.signOut();
+        }
       }
     } catch (err) {
       console.error("Google sign-in error:", err);
