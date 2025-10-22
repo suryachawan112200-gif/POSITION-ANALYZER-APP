@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import Head from "next/head";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { FaUserCircle } from "react-icons/fa";
+import { FaUserCircle, FaBars } from "react-icons/fa";
 import { useAuth } from "/contexts/AuthContext";
 import ProfileModal from "/components/ProfileModal";
 import LoginPopup from "/components/LoginPopup";
@@ -400,17 +400,24 @@ const FAQItem = ({ question, answer }) => {
   );
 };
 
-// Premium Section Component
+// Premium Section Component (Redesigned)
 const PremiumSection = () => {
   return (
     <section className="premium-section">
-      <h2>Buy AIVISOR Premium at $29</h2>
-      <p>Unlimited analyses per day.</p>
-      <p>Priority support and early access to new features.</p>
-      <p>Advanced analytics tools and custom insights.</p>
-      <Link href="/subscribe">
-        <button className="pay-btn">Subscribe Now</button>
-      </Link>
+      <div className="pricing-card">
+        <h3 className="pricing-title">Pro</h3>
+        <p className="pricing-price">$29/mo</p>
+        <p className="pricing-description">Unlimited analyses with advanced insights</p>
+        <ul className="pricing-features">
+          <li><span className="feature-icon">✅</span> Unlimited daily analyses</li>
+          <li><span className="feature-icon">✅</span> Priority support</li>
+          <li><span className="feature-icon">✅</span> Early feature access</li>
+          <li><span className="feature-icon">✅</span> Custom analytics tools</li>
+        </ul>
+        <Link href="/subscribe">
+          <button className="pricing-button">Subscribe Now</button>
+        </Link>
+      </div>
     </section>
   );
 };
@@ -428,6 +435,7 @@ export default function Home() {
   const [showProfile, setShowProfile] = useState(false);
   const [showLoginPopup, setShowLoginPopup] = useState(false);
   const [analysisCount, setAnalysisCount] = useState(0);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const dashboardRef = useRef(null);
 
@@ -554,12 +562,12 @@ export default function Home() {
             <span style={logoFont}>AIVISOR</span>
             <span className="version-tag">[V3.2]</span>
           </div>
-          <nav className="nav-links">
-            <Link href="#features">Features</Link>
-            <Link href="#howitworks">How It Works</Link>
-            <Link href="#faq">FAQ</Link>
-            <Link href="/support">Support</Link>
-            <Link href="/login">Login</Link>
+          <nav className={`nav-links ${menuOpen ? "open" : ""}`}>
+            <Link href="#features" onClick={() => setMenuOpen(false)}>Features</Link>
+            <Link href="#howitworks" onClick={() => setMenuOpen(false)}>How It Works</Link>
+            <Link href="#faq" onClick={() => setMenuOpen(false)}>FAQ</Link>
+            <Link href="/support" onClick={() => setMenuOpen(false)}>Support</Link>
+            <Link href="/login" onClick={() => setMenuOpen(false)}>Login</Link>
           </nav>
           <div className="header-actions">
             <span className="user-greeting">
@@ -569,6 +577,11 @@ export default function Home() {
               className="profile-icon"
               onClick={() => setShowProfile(true)}
               aria-label="Open profile"
+            />
+            <FaBars
+              className="menu-icon"
+              onClick={() => setMenuOpen(!menuOpen)}
+              aria-label="Toggle menu"
             />
           </div>
         </div>
@@ -740,19 +753,17 @@ export default function Home() {
       <style jsx global>{`
         :root {
           --bg-primary: #FFFFFF;
-          --bg-secondary: #F5F8FF;
-          --bg-card: #F5F8FF;
-          --accent-blue: #4B9BFF;
-          --accent-purple: #7A5CFF;
-          --text-primary: #1A1A1A;
+          --bg-card: #F8FBFF;
+          --accent-blue: #43C0F6;
+          --text-primary: #333333;
           --text-muted: #6B7280;
           --success: #3ED598;
           --error: #EF4444;
-          --gradient: linear-gradient(135deg, #4B9BFF, #7A5CFF);
+          --button-gradient: linear-gradient(135deg, #43C0F6, #3AEAB6);
           --border-soft: #E5E7EB;
           --shadow-subtle: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
           --shadow-hover: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-          --shadow-neumorphic: 5px 5px 10px #d9d9d9, -5px -5px 10px #ffffff;
+          --shadow-glow: 0 0 15px rgba(67, 192, 246, 0.3);
         }
 
         * {
@@ -777,7 +788,7 @@ export default function Home() {
           left: 0;
           width: 100%;
           height: 100%;
-          background: linear-gradient(135deg, rgba(75, 155, 255, 0.05) 0%, rgba(122, 92, 255, 0.05) 100%);
+          background: linear-gradient(135deg, rgba(67, 192, 246, 0.05) 0%, rgba(58, 234, 182, 0.05) 100%);
           pointer-events: none;
           z-index: -1;
         }
@@ -789,7 +800,7 @@ export default function Home() {
           background: rgba(255, 255, 255, 0.95);
           backdrop-filter: blur(20px);
           border-bottom: 1px solid var(--border-soft);
-          padding: 1rem 0;
+          padding: 0.5rem 0;
         }
 
         .header-content {
@@ -798,30 +809,32 @@ export default function Home() {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          padding: 0 2rem;
+          padding: 0 1rem;
+          height: 50px;
         }
 
         .logo-section {
           display: flex;
           align-items: center;
-          gap: 1rem;
+          gap: 0.5rem;
         }
 
         .logo-icon {
-          font-size: 2rem;
+          font-size: 1.5rem;
         }
 
         .version-tag {
-          background: var(--accent-purple);
+          background: var(--accent-blue);
           color: #FFFFFF;
-          padding: 0.25rem 0.5rem;
-          border-radius: 0.5rem;
-          font-size: 0.75rem;
+          padding: 0.15rem 0.3rem;
+          border-radius: 0.3rem;
+          font-size: 0.6rem;
         }
 
         .nav-links {
           display: flex;
-          gap: 2rem;
+          gap: 1.5rem;
+          align-items: center;
         }
 
         .nav-links a {
@@ -830,37 +843,52 @@ export default function Home() {
           font-size: 0.9rem;
           font-weight: 500;
           transition: color 0.3s;
+          white-space: nowrap;
         }
 
         .nav-links a:hover {
           color: var(--accent-blue);
         }
 
+        .nav-links.open {
+          display: flex;
+          flex-direction: column;
+          position: absolute;
+          top: 50px;
+          left: 0;
+          width: 100%;
+          background: rgba(255, 255, 255, 0.95);
+          padding: 1rem;
+          border-bottom: 1px solid var(--border-soft);
+          box-shadow: var(--shadow-subtle);
+        }
+
         .header-actions {
           display: flex;
           align-items: center;
-          gap: 1rem;
+          gap: 0.5rem;
         }
 
         .user-greeting {
           color: var(--accent-blue);
-          font-size: 0.9rem;
+          font-size: 0.8rem;
           font-weight: 500;
+          white-space: nowrap;
         }
 
-        .profile-icon {
-          font-size: 2rem;
+        .profile-icon, .menu-icon {
+          font-size: 1.5rem;
           color: var(--text-muted);
           cursor: pointer;
           transition: color 0.3s;
         }
 
-        .profile-icon:hover {
+        .profile-icon:hover, .menu-icon:hover {
           color: var(--accent-blue);
         }
 
-        .login-btn, .support-btn, .pay-btn {
-          background: var(--gradient);
+        .login-btn, .support-btn, .pay-btn, .quick-demo {
+          background: var(--button-gradient);
           color: #FFFFFF;
           padding: 0.75rem 1.5rem;
           border: none;
@@ -870,14 +898,9 @@ export default function Home() {
           transition: all 0.3s;
         }
 
-        .login-btn:hover, .support-btn:hover, .pay-btn:hover {
+        .login-btn:hover, .support-btn:hover, .pay-btn:hover, .quick-demo:hover {
           box-shadow: var(--shadow-hover);
           transform: translateY(-2px);
-        }
-
-        .pay-btn:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
         }
 
         .hero {
@@ -890,7 +913,7 @@ export default function Home() {
           position: absolute;
           top: 1rem;
           right: 2rem;
-          background: var(--bg-secondary);
+          background: var(--bg-card);
           padding: 0.5rem 1rem;
           border-radius: 2rem;
           font-size: 0.9rem;
@@ -911,33 +934,20 @@ export default function Home() {
           font-size: 5rem;
           font-weight: 800;
           letter-spacing: 0.1em;
-          background: var(--gradient);
+          background: var(--button-gradient);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           margin-bottom: 1rem;
         }
 
         .aivi { color: var(--accent-blue); }
-        .visor { color: var(--accent-purple); }
+        .visor { color: var(--accent-blue); }
 
         .hero-subtitle {
           color: var(--text-muted);
           font-size: 1.2rem;
           letter-spacing: 0.05em;
           margin-bottom: 2rem;
-        }
-
-        .quick-demo {
-          background: var(--gradient);
-          color: #FFFFFF;
-          padding: 1.2rem 3rem;
-          border: none;
-          border-radius: 3rem;
-          font-size: 1.1rem;
-          font-weight: 700;
-          cursor: pointer;
-          transition: all 0.3s;
-          box-shadow: var(--shadow-subtle);
         }
 
         .quick-demo:hover {
@@ -988,15 +998,73 @@ export default function Home() {
           border: 1px solid var(--border-soft);
         }
 
-        .premium-section h2 {
-          color: var(--text-primary);
-          margin-bottom: 1rem;
-          font-weight: 600;
+        .premium-section .pricing-card {
+          background: var(--bg-card);
+          border-radius: 12px;
+          padding: 2rem;
+          box-shadow: var(--shadow-subtle);
+          text-align: center;
+          max-width: 300px;
+          margin: 0 auto;
+          transition: transform 0.3s, box-shadow 0.3s;
         }
 
-        .premium-section p {
-          color: var(--text-muted);
+        .premium-section .pricing-card:hover {
+          transform: translateY(-5px);
+          box-shadow: var(--shadow-hover), var(--shadow-glow);
+        }
+
+        .pricing-title {
+          color: var(--text-primary);
+          font-size: 1.5rem;
+          font-weight: 600;
+          margin-bottom: 1rem;
+        }
+
+        .pricing-price {
+          color: var(--accent-blue);
+          font-size: 2rem;
+          font-weight: 700;
           margin-bottom: 0.5rem;
+        }
+
+        .pricing-description {
+          color: var(--text-muted);
+          font-size: 0.9rem;
+          margin-bottom: 1.5rem;
+        }
+
+        .pricing-features {
+          list-style: none;
+          text-align: left;
+          margin-bottom: 1.5rem;
+          padding: 0 1rem;
+        }
+
+        .pricing-features li {
+          color: var(--text-primary);
+          font-size: 0.9rem;
+          margin-bottom: 0.5rem;
+        }
+
+        .feature-icon {
+          margin-right: 0.5rem;
+        }
+
+        .pricing-button {
+          background: var(--button-gradient);
+          color: #FFFFFF;
+          padding: 0.75rem 1.5rem;
+          border: none;
+          border-radius: 2rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.3s;
+        }
+
+        .pricing-button:hover {
+          transform: translateY(-2px);
+          box-shadow: var(--shadow-hover);
         }
 
         .history-section h3 {
@@ -1025,7 +1093,7 @@ export default function Home() {
         }
 
         .history-card:hover {
-          background: var(--bg-secondary);
+          background: var(--bg-card);
           transform: translateX(5px);
           box-shadow: var(--shadow-hover);
         }
@@ -1058,7 +1126,7 @@ export default function Home() {
         }
 
         .progress-fill {
-          background: var(--gradient);
+          background: var(--button-gradient);
           height: 100%;
           transition: width 0.3s ease;
         }
@@ -1103,7 +1171,7 @@ export default function Home() {
 
         .input-field:focus {
           border-color: var(--accent-blue);
-          box-shadow: 0 0 0 3px rgba(75, 155, 255, 0.1);
+          box-shadow: 0 0 0 3px rgba(67, 192, 246, 0.1);
           outline: none;
         }
 
@@ -1134,7 +1202,7 @@ export default function Home() {
         }
 
         .toggle-option.active {
-          background: var(--gradient);
+          background: var(--button-gradient);
           color: #FFFFFF;
           font-weight: 600;
         }
@@ -1169,7 +1237,7 @@ export default function Home() {
         }
 
         .nav-btn:not(.secondary) {
-          background: var(--gradient);
+          background: var(--button-gradient);
           color: #FFFFFF;
         }
 
@@ -1186,7 +1254,7 @@ export default function Home() {
         .analyze-btn {
           width: 100%;
           padding: 1.2rem;
-          background: var(--gradient);
+          background: var(--button-gradient);
           color: #FFFFFF;
           border: none;
           border-radius: 0.5rem;
@@ -1297,7 +1365,7 @@ export default function Home() {
 
         .positive { color: var(--success); }
         .negative { color: var(--error); }
-        .trend { color: var(--accent-purple); }
+        .trend { color: var(--accent-blue); }
 
         .levels-section {
           margin: 1rem 0;
@@ -1363,7 +1431,7 @@ export default function Home() {
 
         .patterns-list div {
           padding: 0.5rem;
-          background: var(--bg-secondary);
+          background: var(--bg-card);
           border-radius: 0.25rem;
           font-size: 0.9rem;
           word-break: break-word;
@@ -1372,7 +1440,7 @@ export default function Home() {
         .action-recommend {
           text-align: center;
           padding: 1rem;
-          background: rgba(122, 92, 255, 0.1);
+          background: rgba(67, 192, 246, 0.1);
           border-radius: 0.5rem;
           font-size: 1rem;
         }
@@ -1396,7 +1464,7 @@ export default function Home() {
         }
 
         .cta-btn.primary {
-          background: var(--gradient);
+          background: var(--button-gradient);
           color: #FFFFFF;
         }
 
@@ -1453,7 +1521,7 @@ export default function Home() {
 
         .testimonials-section, .faq-section, .premium-section, .security-section, .integrations-section, .roadmap-section {
           padding: 4rem 2rem;
-          background: var(--bg-secondary);
+          background: var(--bg-card);
         }
 
         .carousel {
@@ -1478,7 +1546,7 @@ export default function Home() {
         .testimonial-card cite {
           display: block;
           margin-top: 1rem;
-          color: var(--accent-purple);
+          color: var(--accent-blue);
           text-align: right;
           font-style: normal;
           font-size: 0.9rem;
@@ -1608,12 +1676,16 @@ export default function Home() {
 
         @media (max-width: 768px) {
           .header-content {
-            flex-direction: column;
-            gap: 1rem;
-            padding: 0 1rem;
+            height: 50px;
           }
           .nav-links {
             display: none;
+          }
+          .header-actions .menu-icon {
+            display: block;
+          }
+          .nav-links.open {
+            display: flex;
           }
           .hero-title {
             font-size: 3rem;
@@ -1660,7 +1732,7 @@ export default function Home() {
           }
           .tab-headers button.active {
             border-bottom: 1px solid var(--accent-blue);
-            background: rgba(75, 155, 255, 0.05);
+            background: rgba(67, 192, 246, 0.05);
           }
           .summary-item {
             flex-direction: column;
