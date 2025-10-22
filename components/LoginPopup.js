@@ -5,137 +5,82 @@ export default function LoginPopup({ onClose }) {
   const router = useRouter();
 
   const handleLoginRedirect = () => {
+    console.log("Redirecting to /login");
     router.push("/login");
   };
 
   return (
-    <div className="login-popup-overlay">
-      <div className="login-popup">
-        <button className="close-btn" onClick={onClose}>
+    <div style={{ 
+      position: "fixed", 
+      top: 0, 
+      left: 0, 
+      right: 0, 
+      bottom: 0, 
+      background: "rgba(0, 0, 0, 0.5)", 
+      display: "flex", 
+      justifyContent: "center", 
+      alignItems: "center", 
+      zIndex: 5000 
+    }}>
+      <div style={{ 
+        background: "#f0f2eaff", 
+        padding: "2rem", 
+        borderRadius: "1rem", 
+        border: "1px solid #7da4f4ff", 
+        maxWidth: "400px", 
+        width: "90%", 
+        textAlign: "center", 
+        position: "relative", 
+        overflow: "visible" 
+      }}>
+        <button 
+          style={{ 
+            position: "absolute", 
+            top: "0.5rem", 
+            right: "0.5rem", 
+            background: "#EF4444", 
+            color: "#FFFFFF", 
+            border: "none", 
+            borderRadius: "50%", 
+            width: "24px", 
+            height: "24px", 
+            fontSize: "0.9rem", 
+            cursor: "pointer" 
+          }} 
+          onClick={onClose}
+        >
           ×
         </button>
-        <div className="logo-section">
-          <span className="logo-icon">🤖</span>
-          <h2>Login Required</h2>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", justifyContent: "center", marginBottom: "1.5rem" }}>
+          <span style={{ fontSize: "2rem" }}>🤖</span>
+          <h2 style={{ fontSize: "1.8rem", fontWeight: 800, background: "linear-gradient(135deg, #4B9BFF, #7A5CFF)", WebkitBackgroundClip: "text", color: "transparent" }}>
+            Login Required
+          </h2>
         </div>
-        <p>You've reached the free analysis limit (2 per session). Log in or sign up to continue analyzing unlimited positions.</p>
-        <Link href="/login">
-          <button className="cta-btn primary" onClick={handleLoginRedirect}>
+        <p style={{ color: "#6B7280", fontSize: "0.9rem", marginBottom: "1.5rem", lineHeight: "1.4" }}>
+          You've reached the free analysis limit (2 per session). Log in or sign up to continue analyzing unlimited positions.
+        </p>
+        <div style={{ display: "flex", justifyContent: "center", marginTop: "1rem" }}>
+          <button 
+            style={{ 
+              padding: "0.75rem 1.5rem", 
+              border: "none", 
+              borderRadius: "0.5rem", 
+              fontSize: "1rem", 
+              fontWeight: 600, 
+              cursor: "pointer", 
+              background: "linear-gradient(135deg, #4B9BFF, #7A5CFF)", 
+              color: "#FFFFFF", 
+              display: "inline-block", 
+              opacity: 1, 
+              visibility: "visible" 
+            }} 
+            onClick={handleLoginRedirect}
+          >
             Login / Sign Up 🔐
           </button>
-        </Link>
+        </div>
       </div>
-
-      <style jsx>{`
-        :root {
-          --bg-primary: #FFFFFF;
-          --accent-blue: #4B9BFF;
-          --accent-purple: #7A5CFF;
-          --gradient: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
-          --text-primary: #1A1A1A;
-          --text-muted: #6B7280;
-          --error: #EF4444;
-          --border-soft: #E5E7EB;
-          --shadow-subtle: 0 2px 4px rgba(0, 0, 0, 0.05);
-        }
-
-        .login-popup-overlay {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: rgba(0, 0, 0, 0.5);
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          z-index: 1000;
-        }
-
-        .login-popup {
-          background: var(--bg-primary) !important;
-          padding: 2rem;
-          border-radius: 1rem;
-          border: 1px solid var(--border-soft);
-          box-shadow: var(--shadow-subtle);
-          max-width: 400px;
-          width: 90%;
-          text-align: center;
-        }
-
-        .close-btn {
-          position: absolute;
-          top: 0.5rem;
-          right: 0.5rem;
-          background: var(--error);
-          color: #FFFFFF;
-          border: none;
-          border-radius: 50%;
-          width: 24px;
-          height: 24px;
-          font-size: 0.9rem;
-          cursor: pointer;
-        }
-
-        .close-btn:hover {
-          background: #FF5555;
-        }
-
-        .logo-section {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          justify-content: center;
-          margin-bottom: 1.5rem;
-        }
-
-        .logo-icon {
-          font-size: 2rem;
-        }
-
-        h2 {
-          font-size: 1.8rem;
-          font-weight: 800;
-          background: var(--gradient);
-          -webkit-background-clip: text;
-          color: transparent;
-        }
-
-        p {
-          color: var(--text-muted);
-          font-size: 0.9rem;
-          margin-bottom: 1rem;
-        }
-
-        .cta-btn {
-          padding: 0.75rem 1.5rem;
-          border: none;
-          border-radius: 0.5rem;
-          font-size: 0.9rem;
-          font-weight: 600;
-          cursor: pointer;
-          transition: transform 0.2s;
-          background: var(--gradient);
-          color: #FFFFFF;
-        }
-
-        .cta-btn:hover {
-          transform: scale(1.05);
-        }
-
-        @media (max-width: 480px) {
-          .login-popup {
-            padding: 1rem;
-          }
-          h2 {
-            font-size: 1.5rem;
-          }
-          p,
-          .cta-btn {
-            font-size: 0.8rem;
-          }
-        }
-      `}</style>
     </div>
   );
 }
