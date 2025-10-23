@@ -441,10 +441,16 @@ export default function Home() {
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const count = parseInt(localStorage.getItem("aivisorAnalysisCount") || "0");
-      setAnalysisCount(count);
+      // Load analysis count only if not logged in, reset for logged-in users
+      if (!user) {
+        const count = parseInt(localStorage.getItem("aivisorAnalysisCount") || "0");
+        setAnalysisCount(count);
+      } else {
+        setAnalysisCount(0); // Reset count for logged-in users
+        localStorage.removeItem("aivisorAnalysisCount"); // Optional: Clear stored count
+      }
     }
-  }, []);
+  }, [user]);
 
   const scrollToDashboard = () => {
     dashboardRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -465,7 +471,7 @@ export default function Home() {
   };
 
   const incrementAnalysisCount = () => {
-    if (typeof window !== "undefined") {
+    if (typeof window !== "undefined" && !user) { // Only increment for unauthenticated users
       const newCount = analysisCount + 1;
       setAnalysisCount(newCount);
       localStorage.setItem("aivisorAnalysisCount", newCount.toString());
@@ -527,7 +533,7 @@ export default function Home() {
       const resultData = await response.json();
       setResult(resultData);
       saveHistory(inputData, resultData);
-      incrementAnalysisCount();
+      incrementAnalysisCount(); // Only increments if not logged in
     } catch (err) {
       setError(err.message);
     } finally {
