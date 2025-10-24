@@ -29,7 +29,7 @@ const Hero = ({ scrollToDashboard }) => {
         </h1>
         <p className="hero-subtitle">Neural Analytics for Crypto Positions</p>
         <button className="quick-demo" onClick={scrollToDashboard}>
-          Try Your First 2 Analyses Free (4h Timeframe)
+          Try Your First 2 Analyses Free (1h, 4h, 1d Timeframes)
         </button>
       </div>
     </div>
@@ -75,6 +75,8 @@ const InputWizard = ({
   setMarket,
   positionType,
   setPositionType,
+  timeframe,
+  setTimeframe,
   entryPrice,
   setEntryPrice,
   quantity,
@@ -83,7 +85,7 @@ const InputWizard = ({
   submitData,
 }) => {
   const [step, setStep] = useState(1);
-  const totalSteps = 3;
+  const totalSteps = 4;
 
   const nextStep = () => {
     if (step < totalSteps) setStep(step + 1);
@@ -94,8 +96,9 @@ const InputWizard = ({
 
   const isStepValid = () => {
     if (step === 1) return coin && market;
-    if (step === 2) return positionType;
-    if (step === 3) return entryPrice && quantity;
+    if (step === 2) return timeframe;
+    if (step === 3) return positionType;
+    if (step === 4) return entryPrice && quantity;
     return true;
   };
 
@@ -127,6 +130,34 @@ const InputWizard = ({
         )}
         {step === 2 && (
           <>
+            <h3>Timeframe</h3>
+            <div className="toggle-group">
+              <button
+                className={`toggle-option ${timeframe === "1h" ? "active" : ""}`}
+                onClick={() => setTimeframe("1h")}
+                aria-pressed={timeframe === "1h"}
+              >
+                1h
+              </button>
+              <button
+                className={`toggle-option ${timeframe === "4h" ? "active" : ""}`}
+                onClick={() => setTimeframe("4h")}
+                aria-pressed={timeframe === "4h"}
+              >
+                4h
+              </button>
+              <button
+                className={`toggle-option ${timeframe === "1d" ? "active" : ""}`}
+                onClick={() => setTimeframe("1d")}
+                aria-pressed={timeframe === "1d"}
+              >
+                1d
+              </button>
+            </div>
+          </>
+        )}
+        {step === 3 && (
+          <>
             <h3>Position</h3>
             <div className="toggle-group">
               <button
@@ -146,7 +177,7 @@ const InputWizard = ({
             </div>
           </>
         )}
-        {step === 3 && (
+        {step === 4 && (
           <>
             <h3>Entry Details</h3>
             <div className="input-row">
@@ -190,6 +221,19 @@ const InputWizard = ({
 const ResultTabs = ({ result }) => {
   const [activeTab, setActiveTab] = useState("summary");
 
+  // Compute confidence meter based on sentiment
+  const confidenceMeter = () => {
+    const confidence = parseFloat(result?.confidence || "0");
+    if (result?.sentiment === "Neutral/Sideways") {
+      return { long: 50, short: 50 };
+    } else if (result?.sentiment.includes("Bullish")) {
+      return { long: confidence, short: 100 - confidence };
+    } else if (result?.sentiment.includes("Bearish")) {
+      return { long: 100 - confidence, short: confidence };
+    }
+    return { long: 0, short: 0 };
+  };
+
   return (
     <div className="result-tabs">
       <div className="tab-headers" role="tablist">
@@ -223,7 +267,7 @@ const ResultTabs = ({ result }) => {
           role="tab"
           aria-selected={activeTab === "chart-patterns"}
         >
-          Detected Chart Patterns
+          Detected Patterns
         </button>
         <button
           className={activeTab === "action" ? "active" : ""}
@@ -241,39 +285,36 @@ const ResultTabs = ({ result }) => {
               <h4>Trade Summary</h4>
               <div className="summary-item">
                 <span>Asset:</span>{" "}
-                <strong>{result?.coin || "N/A"} ({result?.asset_class?.toUpperCase() || "N/A"})</strong>
+                <strong>{result?.trade_summary?.coin || "N/A"} (CRYPTO)</strong>
               </div>
               <div className="summary-item">
-                <span>Market:</span> <strong>{result?.market?.toUpperCase() || "N/A"}</strong>
+                <span>Market:</span> <strong>{result?.trade_summary?.market?.toUpperCase() || "N/A"}</strong>
               </div>
               <div className="summary-item">
                 <span>Position:</span>{" "}
                 <strong
-                  className={result?.position_type === "long" ? "positive" : "negative"}
+                  className={result?.trade_summary?.position_type === "long" ? "positive" : "negative"}
                 >
-                  {result?.position_type?.toUpperCase() || "N/A"}
+                  {result?.trade_summary?.position_type?.toUpperCase() || "N/A"}
                 </strong>
               </div>
               <div className="summary-item">
                 <span>Entry Price:</span>{" "}
                 <strong className="highlight">
-                  ${result?.entry_price?.toFixed(5) || "N/A"}
+                  ${result?.trade_summary?.entry_price?.toFixed(2) || "N/A"}
                 </strong>
               </div>
               <div className="summary-item">
                 <span>Live Price:</span>{" "}
                 <strong className="highlight">
-                  ${result?.current_price?.toFixed(5) || "N/A"}
+                  ${result?.trade_summary?.current_price?.toFixed(2) || "N/A"}
                 </strong>
               </div>
               <div className="summary-item">
                 <span>P/L:</span>{" "}
-                <strong className={result?.profit_loss >= 0 ? "positive" : "negative"}>
-                  {result?.profit_loss || "N/A"}
+                <strong className={result?.trade_summary?.profit_loss.includes("-") ? "negative" : "positive"}>
+                  {result?.trade_summary?.profit_loss || "N/A"}
                 </strong>
-              </div>
-              <div className="summary-item">
-                <span>Status:</span> <em>{result?.profitability_comment || "No Data"}</em>
               </div>
             </div>
           </div>
@@ -285,26 +326,25 @@ const ResultTabs = ({ result }) => {
               <div className="levels-section">
                 <h5>Take Profit Targets</h5>
                 <div className="levels-list">
-                  {(result?.targets || []).map((target, idx) => (
-                    <div key={idx} className="level positive">
-                      T{idx + 1}: ${target?.toFixed(5) || "N/A"}
+                  <div className="level positive">
+                    T1: ${result?.targets_and_stoplosses?.tgt1?.toFixed(2) || "N/A"}
+                  </div>
+                  {result?.targets_and_stoplosses?.tgt2 && (
+                    <div className="level positive">
+                      T2: ${result?.targets_and_stoplosses?.tgt2?.toFixed(2) || "N/A"}
                     </div>
-                  ))}
+                  )}
                 </div>
               </div>
               <div className="levels-section">
                 <h5>Stop Loss Levels</h5>
                 <div className="levels-list">
-                  {result?.user_stoploss && (
-                    <div className="level negative">
-                      User SL: ${result.user_stoploss?.toFixed(5) || "N/A"}
-                    </div>
-                  )}
-                  {(result?.market_stoplosses || []).map((sl, idx) => (
-                    <div key={idx} className="level negative">
-                      SL{idx + 1}: ${sl?.toFixed(5) || "N/A"}
-                    </div>
-                  ))}
+                  <div className="level negative">
+                    User SL: ${result?.targets_and_stoplosses?.user_sl?.toFixed(2) || "N/A"}
+                  </div>
+                  <div className="level negative">
+                    Market SL: ${result?.targets_and_stoplosses?.market_sl?.toFixed(2) || "N/A"}
+                  </div>
                 </div>
               </div>
             </div>
@@ -315,27 +355,28 @@ const ResultTabs = ({ result }) => {
             <div className="result-card">
               <h4>Market Sentiment</h4>
               <div className="summary-item">
-                <span>Overall Trend:</span>{" "}
-                <strong className="trend">{result?.market_trend?.toUpperCase() || "N/A"}</strong>
+                <span>Sentiment:</span>{" "}
+                <strong className="trend">{result?.sentiment?.toUpperCase() || "N/A"}</strong>
+              </div>
+              <div className="summary-item">
+                <span>Confidence:</span>{" "}
+                <strong>{result?.confidence || "N/A"}</strong>
               </div>
               <div className="confidence-meter">
                 <div className="meter-bar">
                   <div
                     className="meter-fill long"
-                    style={{ width: `${result?.confidence_meter?.long || 0}%` }}
+                    style={{ width: `${confidenceMeter().long}%` }}
                   >
-                    Long: {result?.confidence_meter?.long || 0}%
+                    Long: {confidenceMeter().long}%
                   </div>
                   <div
                     className="meter-fill short"
-                    style={{ width: `${result?.confidence_meter?.short || 0}%` }}
+                    style={{ width: `${confidenceMeter().short}%` }}
                   >
-                    Short: {result?.confidence_meter?.short || 0}%
+                    Short: {confidenceMeter().short}%
                   </div>
                 </div>
-              </div>
-              <div className="summary-item">
-                <em>{result?.trend_comment || "No Comment"}</em>
               </div>
             </div>
           </div>
@@ -343,15 +384,10 @@ const ResultTabs = ({ result }) => {
         {activeTab === "chart-patterns" && (
           <div className="tab-panel">
             <div className="result-card">
-              <h4>Detected Chart Patterns</h4>
+              <h4>Detected Patterns</h4>
               <div className="patterns-list">
                 <div>
-                  Candlesticks:{" "}
-                  {(result?.detected_patterns?.candlesticks || []).join(", ") || "None Detected"}
-                </div>
-                <div>
-                  Chart Patterns:{" "}
-                  {(result?.detected_patterns?.chart_patterns || []).join(", ") || "None Detected"}
+                  Patterns: {(result?.patterns || []).join(", ") || "None Detected"}
                 </div>
               </div>
             </div>
@@ -363,7 +399,7 @@ const ResultTabs = ({ result }) => {
               <h4>Recommended Action</h4>
               <div className="action-recommend">
                 <strong className="trend">
-                  {result?.recommended_action?.toUpperCase() || "HOLD"}
+                  {result?.warning || "No specific action recommended"}
                 </strong>
               </div>
             </div>
@@ -426,6 +462,7 @@ export default function Home() {
   const { user, loading: authLoading } = useAuth();
   const [market, setMarket] = useState("Futures");
   const [positionType, setPositionType] = useState("Long");
+  const [timeframe, setTimeframe] = useState("4h");
   const [coin, setCoin] = useState("");
   const [entryPrice, setEntryPrice] = useState("");
   const [quantity, setQuantity] = useState("");
@@ -488,7 +525,7 @@ export default function Home() {
 
     setResult(null);
     setError(null);
-    if (!coin || !entryPrice || !quantity) {
+    if (!coin || !entryPrice || !quantity || !timeframe) {
       return alert("ERROR: Input parameters missing. Initiate full data sequence.");
     }
     const parsedEntryPrice = parseFloat(entryPrice);
@@ -500,19 +537,17 @@ export default function Home() {
       coin,
       market,
       positionType,
+      timeframe,
       entryPrice: parsedEntryPrice,
       quantity: parsedQuantity,
     };
     const data = {
-      asset_class: "crypto",
       coin: coin.toUpperCase(),
       market: market.toLowerCase(),
       position_type: positionType.toLowerCase(),
+      timeframe: timeframe.toLowerCase(),
       entry_price: parsedEntryPrice,
       quantity: parsedQuantity,
-      timeframe: "4h",
-      has_both_positions: false,
-      risk_pct: 0.02,
     };
     setLoading(true);
     try {
@@ -613,6 +648,8 @@ export default function Home() {
           setMarket={setMarket}
           positionType={positionType}
           setPositionType={setPositionType}
+          timeframe={timeframe}
+          setTimeframe={setTimeframe}
           entryPrice={entryPrice}
           setEntryPrice={setEntryPrice}
           quantity={quantity}
@@ -672,8 +709,8 @@ export default function Home() {
           </div>
           <div className="feature-card">
             <div className="feature-icon">📊</div>
-            <h3>4h Analysis</h3>
-            <p>Focused 4h timeframe insights.</p>
+            <h3>Multi-Timeframe</h3>
+            <p>Insights for 1h, 4h, 1d timeframes.</p>
           </div>
         </div>
       </section>
