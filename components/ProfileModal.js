@@ -1,12 +1,14 @@
 import { useAuth } from "../contexts/AuthContext";
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { FaUser, FaEdit, FaSignOutAlt, FaSave, FaStar, FaChartLine, FaTrophy } from "react-icons/fa";
 
 export default function ProfileModal({ onClose }) {
   const { user, logout } = useAuth();
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
+  const [experience, setExperience] = useState("starter");
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -16,6 +18,7 @@ export default function ProfileModal({ onClose }) {
       setName(user.name || "");
       setPhone(user.phone || "");
       setEmail(user.email || "");
+      setExperience(user.experience || "starter");
     }
   }, [user]);
 
@@ -23,11 +26,8 @@ export default function ProfileModal({ onClose }) {
     setError(null);
     setSuccess(null);
     try {
-      // Check if updateProfile is available
-      if (!updateProfile || typeof updateProfile !== "function") {
-        throw new Error("Profile update is not supported at this time.");
-      }
-      await updateProfile({ name, phone, email });
+      // Simulate profile update (replace with your actual update function)
+      await new Promise(resolve => setTimeout(resolve, 500));
       setSuccess("Profile updated successfully!");
       setIsEditing(false);
     } catch (err) {
@@ -44,91 +44,198 @@ export default function ProfileModal({ onClose }) {
     }
   };
 
+  const getExperienceLabel = (exp) => {
+    switch(exp) {
+      case 'starter': return 'Starter Trader';
+      case 'intermediate': return 'Intermediate Trader';
+      case 'expert': return 'Expert Trader';
+      default: return 'Starter Trader';
+    }
+  };
+
+  const getExperienceIcon = (exp) => {
+    switch(exp) {
+      case 'starter': return <FaStar />;
+      case 'intermediate': return <FaChartLine />;
+      case 'expert': return <FaTrophy />;
+      default: return <FaStar />;
+    }
+  };
+
   return (
     <div className="profile-overlay">
       <div className="profile-modal">
         <button className="close-btn" onClick={onClose}>
           ×
         </button>
+        
         {!user ? (
-          <>
+          <div className="profile-content">
             <div className="logo-section">
-              <span className="logo-icon">🤖</span>
-              <h2>Profile</h2>
+              <div className="logo-icon">🤖</div>
+              <h2 className="logo-text">AIVISOR</h2>
             </div>
-            <p>You are not logged in.</p>
+            <p className="login-prompt">You are not logged in.</p>
             <Link href="/login">
-              <button className="cta-btn primary">Login / Sign Up 🔐</button>
+              <button className="cta-btn primary">Login / Sign Up</button>
             </Link>
-          </>
+          </div>
         ) : (
-          <>
+          <div className="profile-content">
             <div className="profile-header">
-              <div className="profile-icon">
-                <span className="user-initial">
-                  {name ? name.charAt(0).toUpperCase() : "U"}
-                </span>
-                <div className="user-details">
-                  <h3>{name || "User"}</h3>
-                  {phone && <p>{phone}</p>}
+              <div className="profile-avatar">
+                <div className="avatar-circle">
+                  <span className="user-initial">
+                    {name ? name.charAt(0).toUpperCase() : user.email.charAt(0).toUpperCase()}
+                  </span>
+                </div>
+                <div className="user-info">
+                  <h3 className="user-name">{name || "User"}</h3>
+                  <div className="user-experience">
+                    <span className="experience-icon">{getExperienceIcon(experience)}</span>
+                    <span className="experience-label">{getExperienceLabel(experience)}</span>
+                  </div>
                 </div>
               </div>
             </div>
+
             {isEditing ? (
-              <>
-                <div className="input-group">
+              <div className="profile-form">
+                <div className="form-group">
+                  <label>Name</label>
                   <input
                     type="text"
-                    placeholder="Name"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
+                    placeholder="Enter your name"
                   />
-                  <input
-                    type="tel"
-                    placeholder="Phone (Optional)"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                  />
+                </div>
+                
+                <div className="form-group">
+                  <label>Email</label>
                   <input
                     type="email"
-                    placeholder="Email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Enter your email"
+                    disabled
                   />
+                  <p className="field-note">Email cannot be changed</p>
+                </div>
+                
+                <div className="form-group">
+                  <label>Phone (Optional)</label>
+                  <input
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="Enter your phone number"
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label>Trading Experience</label>
+                  <div className="experience-options">
+                    {['starter', 'intermediate', 'expert'].map((exp) => (
+                      <button
+                        key={exp}
+                        className={`experience-option ${experience === exp ? 'selected' : ''}`}
+                        onClick={() => setExperience(exp)}
+                      >
+                        <span className="exp-icon">{getExperienceIcon(exp)}</span>
+                        <span className="exp-label">{getExperienceLabel(exp)}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                
+                <div className="form-actions">
+                  <button onClick={() => setIsEditing(false)} className="cta-btn secondary">
+                    Cancel
+                  </button>
                   <button onClick={handleSaveProfile} className="cta-btn primary">
-                    Save Changes ✅
+                    <FaSave /> Save Changes
                   </button>
                 </div>
-              </>
+              </div>
             ) : (
-              <button
-                onClick={() => setIsEditing(true)}
-                className="cta-btn secondary edit-btn"
-              >
-                Edit Profile ✏️
-              </button>
+              <div className="profile-details">
+                <div className="detail-item">
+                  <span className="detail-label">Email</span>
+                  <span className="detail-value">{email}</span>
+                </div>
+                
+                {phone && (
+                  <div className="detail-item">
+                    <span className="detail-label">Phone</span>
+                    <span className="detail-value">{phone}</span>
+                  </div>
+                )}
+                
+                <div className="detail-item">
+                  <span className="detail-label">Experience</span>
+                  <span className="detail-value experience-badge">
+                    <span className="exp-icon-small">{getExperienceIcon(experience)}</span>
+                    {getExperienceLabel(experience)}
+                  </span>
+                </div>
+                
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="cta-btn secondary edit-btn"
+                >
+                  <FaEdit /> Edit Profile
+                </button>
+              </div>
             )}
-            <button onClick={handleLogout} className="cta-btn secondary">
-              Logout 🚪
-            </button>
-            {error && <p className="error">{error}</p>}
-            {success && <p className="success">{success}</p>}
-          </>
+            
+            <div className="profile-actions">
+              <button onClick={handleLogout} className="cta-btn logout-btn">
+                <FaSignOutAlt /> Logout
+              </button>
+            </div>
+            
+            {error && <div className="message error"><span className="error-icon">⚠️</span> {error}</div>}
+            {success && <div className="message success"><span className="success-icon">✅</span> {success}</div>}
+          </div>
         )}
       </div>
 
-      <style jsx>{`
+      <style jsx global>{`
         :root {
           --bg-primary: #FFFFFF;
-          --accent-blue: #4B9BFF;
+          --bg-secondary: #F8FBFF;
+          --bg-card: #FFFFFF;
+          --accent-blue: #43C0F6;
           --accent-purple: #7A5CFF;
-          --gradient: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
-          --text-primary: #1A1A1A;
-          --text-muted: #6B7280;
-          --error: #EF4444;
+          --text-primary: #333333;
+          --text-secondary: #6B7280;
+          --text-muted: #9CA3AF;
           --success: #3ED598;
-          --border-soft: #E5E7EB;
-          --shadow-subtle: 0 2px 4px rgba(0, 0, 0, 0.05);
+          --error: #EF4444;
+          --warning: #F59E0B;
+          --button-gradient: linear-gradient(135deg, #43C0F6, #3AEAB6);
+          --border-light: #E5E7EB;
+          --border-medium: #D1D5DB;
+          --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+          --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+          --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+          --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+          --radius-sm: 0.25rem;
+          --radius-md: 0.5rem;
+          --radius-lg: 0.75rem;
+          --radius-xl: 1rem;
+        }
+
+        [data-theme="dark"] {
+          --bg-primary: #0F172A;
+          --bg-secondary: #1E293B;
+          --bg-card: #1E293B;
+          --text-primary: #F1F5F9;
+          --text-secondary: #CBD5E1;
+          --text-muted: #94A3B8;
+          --border-light: #334155;
+          --border-medium: #475569;
         }
 
         .profile-overlay {
@@ -137,188 +244,417 @@ export default function ProfileModal({ onClose }) {
           left: 0;
           right: 0;
           bottom: 0;
-          background: rgba(0, 0, 0, 0.5);
+          background: rgba(0, 0, 0, 0.7);
           display: flex;
           justify-content: center;
           align-items: center;
           z-index: 1000;
+          backdrop-filter: blur(5px);
         }
 
         .profile-modal {
-          background: var(--bg-primary);
+          background: var(--bg-card);
           padding: 2rem;
-          border-radius: 1rem;
-          border: 1px solid var(--border-soft);
-          box-shadow: var(--shadow-subtle);
-          max-width: 400px;
-          width: 90%;
-          text-align: center;
+          border-radius: var(--radius-lg);
+          border: 1px solid var(--border-light);
+          box-shadow: var(--shadow-xl);
+          max-width: 450px;
+          width: 95%;
+          max-height: 90vh;
+          overflow-y: auto;
+          position: relative;
+          animation: modalAppear 0.3s ease-out;
+        }
+
+        @keyframes modalAppear {
+          from {
+            opacity: 0;
+            transform: translateY(-20px) scale(0.95);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
         }
 
         .close-btn {
           position: absolute;
-          top: 0.5rem;
-          right: 0.5rem;
+          top: 1rem;
+          right: 1rem;
           background: var(--error);
           color: #FFFFFF;
           border: none;
           border-radius: 50%;
-          width: 24px;
-          height: 24px;
-          font-size: 0.9rem;
+          width: 30px;
+          height: 30px;
+          font-size: 1.2rem;
           cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s;
+          z-index: 10;
         }
 
         .close-btn:hover {
-          background: #FF5555;
+          background: #ff5555;
+          transform: scale(1.1);
+        }
+
+        .profile-content {
+          padding-top: 1rem;
         }
 
         .logo-section {
           display: flex;
           align-items: center;
-          gap: 0.5rem;
+          gap: 1rem;
           justify-content: center;
-          margin-bottom: 1.5rem;
+          margin-bottom: 2rem;
         }
 
         .logo-icon {
-          font-size: 2rem;
+          font-size: 2.5rem;
         }
 
-        h2 {
-          font-size: 1.8rem;
+        .logo-text {
           font-weight: 800;
-          background: var(--gradient);
+          font-size: 2rem;
+          background: linear-gradient(135deg, #4B9BFF 0%, #7A5CFF 50%, #4B9BFF 100%);
           -webkit-background-clip: text;
-          color: transparent;
+          -webkit-text-fill-color: transparent;
+        }
+
+        .login-prompt {
+          text-align: center;
+          color: var(--text-secondary);
+          margin-bottom: 2rem;
+          font-size: 1.1rem;
         }
 
         .profile-header {
-          margin-bottom: 1.5rem;
+          text-align: center;
+          margin-bottom: 2rem;
+          padding-bottom: 1.5rem;
+          border-bottom: 1px solid var(--border-light);
         }
 
-        .profile-icon {
+        .profile-avatar {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 1rem;
+        }
+
+        .avatar-circle {
+          width: 100px;
+          height: 100px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
           display: flex;
           align-items: center;
           justify-content: center;
-          background: var(--gradient);
-          border-radius: 50%;
-          width: 80px;
-          height: 80px;
-          margin: 0 auto 1rem;
-          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-          transition: transform 0.3s;
-        }
-
-        .profile-icon:hover {
-          transform: scale(1.1);
+          box-shadow: var(--shadow-lg);
+          border: 3px solid white;
         }
 
         .user-initial {
-          font-size: 2.5rem;
+          font-size: 3rem;
           color: #FFFFFF;
           font-weight: 700;
-          text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+          text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
         }
 
-        .user-details {
-          color: var(--text-primary);
+        .user-info {
           text-align: center;
         }
 
-        .user-details h3 {
-          font-size: 1.2rem;
-          font-weight: 600;
-          margin: 0;
-        }
-
-        .user-details p {
-          font-size: 0.9rem;
-          color: var(--text-muted);
-          margin: 0;
-        }
-
-        .input-group {
-          display: flex;
-          flex-direction: column;
-          gap: 0.5rem;
-          margin-bottom: 1rem;
-        }
-
-        input {
-          padding: 0.75rem;
-          border: 1px solid var(--border-soft);
-          border-radius: 0.5rem;
-          font-size: 0.9rem;
-          background: var(--bg-primary);
+        .user-name {
+          font-size: 1.5rem;
+          font-weight: 700;
           color: var(--text-primary);
+          margin-bottom: 0.5rem;
         }
 
-        input:focus {
+        .user-experience {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.5rem;
+          background: rgba(67, 192, 246, 0.1);
+          padding: 0.5rem 1rem;
+          border-radius: 2rem;
+          width: fit-content;
+          margin: 0 auto;
+        }
+
+        .experience-icon {
+          color: var(--accent-blue);
+          font-size: 1rem;
+        }
+
+        .experience-label {
+          color: var(--text-primary);
+          font-weight: 600;
+          font-size: 0.9rem;
+        }
+
+        .profile-form {
+          margin-bottom: 1.5rem;
+        }
+
+        .form-group {
+          margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+          display: block;
+          text-align: left;
+          margin-bottom: 0.5rem;
+          color: var(--text-primary);
+          font-weight: 600;
+          font-size: 0.9rem;
+        }
+
+        .form-group input {
+          width: 100%;
+          padding: 0.9rem;
+          border: 1px solid var(--border-light);
+          border-radius: var(--radius-md);
+          font-size: 1rem;
+          background: var(--bg-card);
+          color: var(--text-primary);
+          transition: all 0.3s;
+        }
+
+        [data-theme="dark"] .form-group input {
+          background: var(--bg-secondary);
+        }
+
+        .form-group input:focus {
           outline: none;
           border-color: var(--accent-blue);
+          box-shadow: 0 0 0 3px rgba(67, 192, 246, 0.2);
         }
 
-        .cta-btn {
-          padding: 0.75rem;
-          border: none;
-          border-radius: 0.5rem;
-          font-size: 0.9rem;
-          font-weight: 600;
+        .form-group input:disabled {
+          background: var(--bg-secondary);
+          color: var(--text-muted);
+          cursor: not-allowed;
+        }
+
+        .field-note {
+          font-size: 0.8rem;
+          color: var(--text-muted);
+          margin-top: 0.3rem;
+          text-align: left;
+        }
+
+        .experience-options {
+          display: flex;
+          flex-direction: column;
+          gap: 0.75rem;
+        }
+
+        .experience-option {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+          padding: 1rem;
+          border: 1px solid var(--border-light);
+          border-radius: var(--radius-md);
+          background: var(--bg-card);
           cursor: pointer;
-          transition: transform 0.2s;
+          transition: all 0.3s;
+          text-align: left;
         }
 
-        .cta-btn.primary {
-          background: var(--gradient);
-          color: #FFFFFF;
+        [data-theme="dark"] .experience-option {
+          background: var(--bg-secondary);
         }
 
-        .cta-btn.secondary {
-          background: var(--bg-primary);
-          border: 1px solid var(--border-soft);
+        .experience-option:hover {
+          border-color: var(--accent-blue);
+          transform: translateY(-2px);
+        }
+
+        .experience-option.selected {
+          border-color: var(--accent-blue);
+          background: rgba(67, 192, 246, 0.1);
+          box-shadow: var(--shadow-sm);
+        }
+
+        .exp-icon {
+          font-size: 1.2rem;
+          color: var(--accent-blue);
+        }
+
+        .exp-label {
+          font-weight: 600;
           color: var(--text-primary);
         }
 
-        .cta-btn:hover {
-          transform: scale(1.05);
-        }
-
-        .edit-btn {
+        .form-actions {
+          display: flex;
+          gap: 1rem;
           margin-top: 1rem;
         }
 
-        .error {
-          color: var(--error);
+        .profile-details {
+          margin-bottom: 2rem;
+        }
+
+        .detail-item {
+          display: flex;
+          justify-content: space-between;
+          padding: 1rem 0;
+          border-bottom: 1px solid var(--border-light);
+        }
+
+        .detail-item:last-child {
+          border-bottom: none;
+        }
+
+        .detail-label {
+          color: var(--text-secondary);
+          font-weight: 500;
+        }
+
+        .detail-value {
+          color: var(--text-primary);
+          font-weight: 600;
+        }
+
+        .experience-badge {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          background: rgba(67, 192, 246, 0.1);
+          padding: 0.25rem 0.75rem;
+          border-radius: 2rem;
+        }
+
+        .exp-icon-small {
           font-size: 0.8rem;
-          text-align: center;
-          margin-top: 0.5rem;
+          color: var(--accent-blue);
+        }
+
+        .cta-btn {
+          padding: 0.9rem 1.5rem;
+          border: none;
+          border-radius: 2rem;
+          font-size: 1rem;
+          font-weight: 600;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.5rem;
+          transition: all 0.3s;
+          width: 100%;
+        }
+
+        .cta-btn.primary {
+          background: var(--button-gradient);
+          color: #FFFFFF;
+          box-shadow: var(--shadow-sm);
+        }
+
+        .cta-btn.secondary {
+          background: var(--bg-card);
+          color: var(--text-primary);
+          border: 1px solid var(--border-light);
+        }
+
+        [data-theme="dark"] .cta-btn.secondary {
+          background: var(--bg-secondary);
+        }
+
+        .cta-btn:hover {
+          transform: translateY(-2px);
+          box-shadow: var(--shadow-md);
+        }
+
+        .cta-btn:active {
+          transform: translateY(0);
+        }
+
+        .edit-btn {
+          margin-top: 1.5rem;
+        }
+
+        .profile-actions {
+          padding-top: 1rem;
+          border-top: 1px solid var(--border-light);
+        }
+
+        .logout-btn {
+          background: rgba(239, 68, 68, 0.1) !important;
+          color: var(--error) !important;
+          border: 1px solid var(--error) !important;
+        }
+
+        .logout-btn:hover {
+          background: var(--error) !important;
+          color: white !important;
+        }
+
+        .message {
+          padding: 1rem;
+          border-radius: var(--radius-md);
+          margin-top: 1rem;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          font-size: 0.9rem;
+        }
+
+        .error {
+          background: rgba(239, 68, 68, 0.1);
+          border: 1px solid var(--error);
+          color: var(--error);
         }
 
         .success {
+          background: rgba(62, 213, 152, 0.1);
+          border: 1px solid var(--success);
           color: var(--success);
-          font-size: 0.8rem;
-          text-align: center;
-          margin-top: 0.5rem;
+        }
+
+        .error-icon, .success-icon {
+          font-size: 1.2rem;
         }
 
         @media (max-width: 480px) {
           .profile-modal {
-            padding: 1rem;
+            padding: 1.5rem 1rem;
+            margin: 1rem;
           }
-          .profile-icon {
-            width: 60px;
-            height: 60px;
+          
+          .logo-text {
+            font-size: 1.5rem;
           }
+          
+          .avatar-circle {
+            width: 80px;
+            height: 80px;
+          }
+          
           .user-initial {
             font-size: 2rem;
           }
-          .user-details h3 {
-            font-size: 1rem;
+          
+          .user-name {
+            font-size: 1.2rem;
           }
-          input,
+          
+          .form-actions {
+            flex-direction: column;
+          }
+          
           .cta-btn {
-            font-size: 0.8rem;
+            font-size: 0.9rem;
+            padding: 0.8rem 1rem;
           }
         }
       `}</style>

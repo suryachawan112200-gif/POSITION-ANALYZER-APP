@@ -2,12 +2,12 @@ import { useState, useRef, useEffect } from "react";
 import Head from "next/head";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { FaUserCircle, FaBars } from "react-icons/fa";
+import { FaUserCircle, FaBars, FaMoon, FaSun, FaChartLine, FaRobot, FaCog, FaHistory, FaBolt, FaFire, FaChartBar, FaTrophy, FaShareAlt, FaArrowUp, FaArrowDown, FaExchangeAlt, FaPercentage, FaClock, FaUsers } from "react-icons/fa";
 import { useAuth } from "/contexts/AuthContext";
 import ProfileModal from "/components/ProfileModal";
 import LoginPopup from "/components/LoginPopup";
 
-// Enhanced Logo font style with redesign: Split AIVISOR into AI and VISOR with distinct gradients and subtle animation
+// Enhanced Logo font style with redesign
 const logoFont = {
   fontFamily: "'Inter', sans-serif",
   fontWeight: 800,
@@ -16,25 +16,205 @@ const logoFont = {
   background: "linear-gradient(135deg, #4B9BFF 0%, #7A5CFF 50%, #4B9BFF 100%)",
 };
 
-// Hero Component with Live Ticker
-const Hero = ({ scrollToDashboard }) => {
-  const [btcPrice, setBtcPrice] = useState(65000); // Placeholder for real-time API
+// Theme Toggle Component
+const ThemeToggle = ({ theme, toggleTheme }) => (
+  <button 
+    className="theme-toggle" 
+    onClick={toggleTheme}
+    aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+  >
+    {theme === 'dark' ? <FaSun /> : <FaMoon />}
+  </button>
+);
+
+// Animated Card Component
+const AnimatedCard = ({ children, className = "", delay = 0 }) => (
+  <div 
+    className={`animated-card ${className}`}
+    style={{ animationDelay: `${delay}s` }}
+  >
+    {children}
+  </div>
+);
+
+// Statistic Card Component
+const StatCard = ({ title, value, icon, trend }) => (
+  <AnimatedCard className="stat-card">
+    <div className="stat-icon">{icon}</div>
+    <div className="stat-content">
+      <h3>{value}</h3>
+      <p>{title}</p>
+      {trend && <span className={`trend ${trend > 0 ? 'positive' : 'negative'}`}>{trend > 0 ? '+' : ''}{trend}%</span>}
+    </div>
+  </AnimatedCard>
+);
+
+// Market Data Card Component
+const MarketDataCard = ({ title, value, change, icon, isPositive, isDominance = false }) => (
+  <div className="market-data-card">
+    <div className="market-card-header">
+      <div className="market-icon">{icon}</div>
+      <h4>{title}</h4>
+    </div>
+    <div className="market-card-content">
+      <div className={`market-value ${isDominance ? 'dominance-value' : ''}`}>{value}</div>
+      {change && (
+        <div className={`market-change ${isPositive ? 'positive' : 'negative'}`}>
+          {isPositive ? <FaArrowUp /> : <FaArrowDown />} {change}
+        </div>
+      )}
+    </div>
+  </div>
+);
+
+// Fear & Greed Indicator Component
+const FearGreedIndicator = ({ value, status }) => {
+  const getStatusColor = () => {
+    if (value >= 75) return 'extreme-greed';
+    if (value >= 55) return 'greed';
+    if (value >= 45) return 'neutral';
+    if (value >= 25) return 'fear';
+    return 'extreme-fear';
+  };
+
   return (
-    <div className="hero">
-      <div className="ticker">BTC: ${btcPrice.toLocaleString()} <span className="ticker-change positive">+2.3%</span></div>
-      <div className="hero-content">
-        <h1 className="hero-title">
-          <span className="aivi">AI</span>
-          <span className="visor">VISOR</span>
-        </h1>
-        <p className="hero-subtitle">Neural Analytics for Crypto Positions</p>
-        <button className="quick-demo" onClick={scrollToDashboard}>
-          Try Your First 2 Analyses Free (1h, 4h, 1d Timeframes)
-        </button>
+    <div className="fear-greed-card">
+      <div className="fear-greed-header">
+        <FaFire className="fire-icon" />
+        <h3>Fear & Greed Index</h3>
+        <span className="live-badge">LIVE</span>
+      </div>
+      <div className="fear-greed-content">
+        <div className="fear-greed-value">{value}</div>
+        <div className={`fear-greed-status ${getStatusColor()}`}>{status}</div>
+        <div className="fear-greed-bar">
+          <div 
+            className={`fear-greed-fill ${getStatusColor()}`} 
+            style={{ width: `${value}%` }}
+          ></div>
+        </div>
+        <div className="fear-greed-scale">
+          <span>0 Fear</span>
+          <span>100 Greed</span>
+        </div>
       </div>
     </div>
   );
 };
+
+// Top Volume Coins Component
+const TopVolumeCoins = ({ coins }) => (
+  <div className="top-volume-card">
+    <div className="top-volume-header">
+      <FaChartBar className="volume-icon" />
+      <h3>Top Volume Coins (24h)</h3>
+    </div>
+    <div className="top-volume-list">
+      {coins.map((coin, index) => (
+        <div key={index} className="volume-item">
+          <div className="coin-rank">#{index + 1}</div>
+          <div className="coin-name">{coin.symbol}</div>
+          <div className="coin-volume">${coin.volume}</div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+// Market Dominance Component
+const MarketDominance = ({ futures, spot }) => (
+  <div className="dominance-card">
+    <div className="dominance-header">
+      <FaPercentage className="percent-icon" />
+      <h3>Market Dominance</h3>
+    </div>
+    <div className="dominance-content">
+      <div className="dominance-section">
+        <h4>Futures</h4>
+        <div className="dominance-list">
+          {futures.map((coin, index) => (
+            <div key={index} className="dominance-item">
+              <div className="coin-name">{coin.symbol}</div>
+              <div className="coin-dominance">{coin.dominance}%</div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="dominance-section">
+        <h4>Spot</h4>
+        <div className="dominance-list">
+          {spot.map((coin, index) => (
+            <div key={index} className="dominance-item">
+              <div className="coin-name">{coin.symbol}</div>
+              <div className="coin-dominance">{coin.dominance}%</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+// Price Trend Component
+const PriceTrend = ({ coins }) => (
+  <div className="price-trend-card">
+    <div className="price-trend-header">
+      <FaChartLine className="trend-icon" />
+      <h3>7D Price Trend</h3>
+    </div>
+    <div className="price-trend-list">
+      {coins.map((coin, index) => (
+        <div key={index} className="trend-item">
+          <div className="coin-name">{coin.symbol}</div>
+          <div className={`trend-change ${coin.change > 0 ? 'positive' : 'negative'}`}>
+            {coin.change > 0 ? <FaArrowUp /> : <FaArrowDown />} {Math.abs(coin.change)}%
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+// Hero Component with Live Ticker
+const Hero = ({ scrollToDashboard, tickerData, theme, stats }) => (
+  <div className="hero">
+    <div className="ticker">
+      {tickerData.map((item, index) => (
+        <span key={index} className="ticker-item">
+          {item.symbol}: ${item.price} <span className={`ticker-change ${item.change > 0 ? 'positive' : 'negative'}`}>{item.change > 0 ? '+' : ''}{item.change}%</span>
+        </span>
+      ))}
+    </div>
+    <div className="hero-content">
+      <h1 className="hero-title">
+        <span className="aivi">AI</span>
+        <span className="visor">VISOR</span>
+      </h1>
+      <p className="hero-subtitle">Neural Analytics for Crypto Positions</p>
+      <button className="quick-demo" onClick={scrollToDashboard}>
+        Try Your First 2 Analyses Free (4h Timeframe)
+      </button>
+      <div className="hero-stats">
+        <StatCard title="Active Users" value={stats.activeUsers} icon={<FaUsers />} />
+        <StatCard title="Analyses Today" value={stats.analysesToday} icon={<FaChartLine />} />
+        <StatCard title="Accuracy Rate" value={`${stats.accuracyRate}%`} icon={<FaRobot />} trend={2.4} />
+      </div>
+    </div>
+    <div className="floating-elements">
+      {[...Array(5)].map((_, i) => (
+        <div 
+          key={i} 
+          className="floating-element"
+          style={{
+            left: `${15 + i * 15}%`,
+            animationDelay: `${i * 0.5}s`,
+            backgroundColor: theme === 'dark' ? 'rgba(75, 155, 255, 0.1)' : 'rgba(75, 155, 255, 0.05)'
+          }}
+        />
+      ))}
+    </div>
+  </div>
+);
 
 // Progress Bar Component
 const ProgressBar = ({ step, total }) => (
@@ -46,7 +226,11 @@ const ProgressBar = ({ step, total }) => (
 
 // Coin Auto-Suggest Component
 const CoinSuggest = ({ value, onChange }) => {
-  const suggestions = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "XRPUSDT"];
+  const suggestions = [
+    "BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "XRPUSDT", 
+    "ADAUSDT", "DOTUSDT", "AVAXUSDT", "LINKUSDT", "MATICUSDT"
+  ];
+  
   return (
     <div className="coin-suggest">
       <input
@@ -63,9 +247,37 @@ const CoinSuggest = ({ value, onChange }) => {
           <option key={coin} value={coin} />
         ))}
       </datalist>
+      <FaChartLine className="input-icon" />
     </div>
   );
 };
+
+// Timeframe Selector Component
+const TimeframeSelector = ({ value, onChange }) => (
+  <div className="timeframe-selector">
+    <label>Timeframe</label>
+    <div className="toggle-group">
+      <button
+        className={`toggle-option ${value === "15m" ? "active" : ""}`}
+        onClick={() => onChange("15m")}
+      >
+        15m
+      </button>
+      <button
+        className={`toggle-option ${value === "1h" ? "active" : ""}`}
+        onClick={() => onChange("1h")}
+      >
+        1h
+      </button>
+      <button
+        className={`toggle-option ${value === "4h" ? "active" : ""}`}
+        onClick={() => onChange("4h")}
+      >
+        4h
+      </button>
+    </div>
+  </div>
+);
 
 // Input Wizard Component
 const InputWizard = ({
@@ -73,10 +285,10 @@ const InputWizard = ({
   setCoin,
   market,
   setMarket,
-  positionType,
-  setPositionType,
   timeframe,
   setTimeframe,
+  positionType,
+  setPositionType,
   entryPrice,
   setEntryPrice,
   quantity,
@@ -85,7 +297,7 @@ const InputWizard = ({
   submitData,
 }) => {
   const [step, setStep] = useState(1);
-  const totalSteps = 4;
+  const totalSteps = 3;
 
   const nextStep = () => {
     if (step < totalSteps) setStep(step + 1);
@@ -96,14 +308,13 @@ const InputWizard = ({
 
   const isStepValid = () => {
     if (step === 1) return coin && market;
-    if (step === 2) return timeframe;
-    if (step === 3) return positionType;
-    if (step === 4) return entryPrice && quantity;
+    if (step === 2) return entryPrice && quantity;
+    if (step === 3) return timeframe;
     return true;
   };
 
   return (
-    <div className="wizard">
+    <AnimatedCard className="wizard">
       <ProgressBar step={step} total={totalSteps} />
       <div className="wizard-step">
         {step === 1 && (
@@ -130,35 +341,37 @@ const InputWizard = ({
         )}
         {step === 2 && (
           <>
-            <h3>Timeframe</h3>
-            <div className="toggle-group">
-              <button
-                className={`toggle-option ${timeframe === "1h" ? "active" : ""}`}
-                onClick={() => setTimeframe("1h")}
-                aria-pressed={timeframe === "1h"}
-              >
-                1h
-              </button>
-              <button
-                className={`toggle-option ${timeframe === "4h" ? "active" : ""}`}
-                onClick={() => setTimeframe("4h")}
-                aria-pressed={timeframe === "4h"}
-              >
-                4h
-              </button>
-              <button
-                className={`toggle-option ${timeframe === "1d" ? "active" : ""}`}
-                onClick={() => setTimeframe("1d")}
-                aria-pressed={timeframe === "1d"}
-              >
-                1d
-              </button>
+            <h3>Entry Details</h3>
+            <div className="input-row">
+              <div className="input-wrapper">
+                <input
+                  type="number"
+                  placeholder="Entry Price (USD)"
+                  value={entryPrice}
+                  onChange={(e) => setEntryPrice(e.target.value)}
+                  className="input-field"
+                  aria-label="Entry price"
+                />
+                <FaCog className="input-icon" />
+              </div>
+              <div className="input-wrapper">
+                <input
+                  type="number"
+                  placeholder="Quantity"
+                  value={quantity}
+                  onChange={(e) => setQuantity(e.target.value)}
+                  className="input-field"
+                  aria-label="Quantity"
+                />
+                <FaChartLine className="input-icon" />
+              </div>
             </div>
           </>
         )}
         {step === 3 && (
           <>
-            <h3>Position</h3>
+            <h3>Analysis Settings</h3>
+            <TimeframeSelector value={timeframe} onChange={setTimeframe} />
             <div className="toggle-group">
               <button
                 className={`toggle-option ${positionType === "Long" ? "active" : ""}`}
@@ -177,29 +390,6 @@ const InputWizard = ({
             </div>
           </>
         )}
-        {step === 4 && (
-          <>
-            <h3>Entry Details</h3>
-            <div className="input-row">
-              <input
-                type="number"
-                placeholder="Entry Price (USD)"
-                value={entryPrice}
-                onChange={(e) => setEntryPrice(e.target.value)}
-                className="input-field"
-                aria-label="Entry price"
-              />
-              <input
-                type="number"
-                placeholder="Quantity"
-                value={quantity}
-                onChange={(e) => setQuantity(e.target.value)}
-                className="input-field"
-                aria-label="Quantity"
-              />
-            </div>
-          </>
-        )}
         <div className="wizard-nav">
           {step > 1 && <button onClick={prevStep} className="nav-btn secondary">Back</button>}
           {step < totalSteps ? (
@@ -213,29 +403,52 @@ const InputWizard = ({
           )}
         </div>
       </div>
-    </div>
+    </AnimatedCard>
   );
 };
+
+// Detailed Result Card Component
+const DetailedResultCard = ({ title, children, icon }) => (
+  <div className="detailed-result-card">
+    <div className="card-header">
+      <div className="card-icon">{icon}</div>
+      <h4>{title}</h4>
+    </div>
+    <div className="card-content">
+      {children}
+    </div>
+  </div>
+);
+
+// Risk Gauge Component
+const RiskGauge = ({ value, label }) => (
+  <div className="risk-gauge">
+    <div className="gauge-container">
+      <svg viewBox="0 0 36 36" className="circular-chart">
+        <path className="circle-bg"
+          d="M18 2.0845
+            a 15.9155 15.9155 0 0 1 0 31.831
+            a 15.9155 15.9155 0 0 1 0 -31.831"
+        />
+        <path className={`circle ${value > 70 ? 'high-risk' : value > 40 ? 'medium-risk' : 'low-risk'}`}
+          strokeDasharray={`${value}, 100`}
+          d="M18 2.0845
+            a 15.9155 15.9155 0 0 1 0 31.831
+            a 15.9155 15.9155 0 0 1 0 -31.831"
+        />
+        <text x="18" y="20.35" className="percentage">{value}%</text>
+      </svg>
+    </div>
+    <span className="gauge-label">{label}</span>
+  </div>
+);
 
 // Result Tabs Component
 const ResultTabs = ({ result }) => {
   const [activeTab, setActiveTab] = useState("summary");
 
-  // Compute confidence meter based on sentiment
-  const confidenceMeter = () => {
-    const confidence = parseFloat(result?.confidence || "0");
-    if (result?.sentiment === "Neutral/Sideways") {
-      return { long: 50, short: 50 };
-    } else if (result?.sentiment.includes("Bullish")) {
-      return { long: confidence, short: 100 - confidence };
-    } else if (result?.sentiment.includes("Bearish")) {
-      return { long: 100 - confidence, short: confidence };
-    }
-    return { long: 0, short: 0 };
-  };
-
   return (
-    <div className="result-tabs">
+    <AnimatedCard className="result-tabs">
       <div className="tab-headers" role="tablist">
         <button
           className={activeTab === "summary" ? "active" : ""}
@@ -267,7 +480,7 @@ const ResultTabs = ({ result }) => {
           role="tab"
           aria-selected={activeTab === "chart-patterns"}
         >
-          Detected Patterns
+          Detected Chart Patterns
         </button>
         <button
           className={activeTab === "action" ? "active" : ""}
@@ -280,42 +493,54 @@ const ResultTabs = ({ result }) => {
       </div>
       <div className="tab-content" role="tabpanel">
         {activeTab === "summary" && (
-          <div className="tab-panel">
-            <div className="result-card">
-              <h4>Trade Summary</h4>
-              <div className="summary-item">
-                <span>Asset:</span>{" "}
-                <strong>{result?.trade_summary?.coin || "N/A"} (CRYPTO)</strong>
-              </div>
-              <div className="summary-item">
-                <span>Market:</span> <strong>{result?.trade_summary?.market?.toUpperCase() || "N/A"}</strong>
-              </div>
-              <div className="summary-item">
-                <span>Position:</span>{" "}
-                <strong
-                  className={result?.trade_summary?.position_type === "long" ? "positive" : "negative"}
-                >
-                  {result?.trade_summary?.position_type?.toUpperCase() || "N/A"}
-                </strong>
-              </div>
-              <div className="summary-item">
-                <span>Entry Price:</span>{" "}
-                <strong className="highlight">
-                  ${result?.trade_summary?.entry_price?.toFixed(2) || "N/A"}
-                </strong>
-              </div>
-              <div className="summary-item">
-                <span>Live Price:</span>{" "}
-                <strong className="highlight">
-                  ${result?.trade_summary?.current_price?.toFixed(2) || "N/A"}
-                </strong>
-              </div>
-              <div className="summary-item">
-                <span>P/L:</span>{" "}
-                <strong className={result?.trade_summary?.profit_loss.includes("-") ? "negative" : "positive"}>
-                  {result?.trade_summary?.profit_loss || "N/A"}
-                </strong>
-              </div>
+          <div className="tab-panel summary-tab">
+            <div className="summary-grid">
+              <DetailedResultCard title="Trade Overview" icon={<FaChartLine />}>
+                <div className="summary-item">
+                  <span>Asset:</span>{" "}
+                  <strong>{result?.coin || "N/A"} ({result?.asset_class?.toUpperCase() || "N/A"})</strong>
+                </div>
+                <div className="summary-item">
+                  <span>Market:</span> <strong>{result?.market?.toUpperCase() || "N/A"}</strong>
+                </div>
+                <div className="summary-item">
+                  <span>Position:</span>{" "}
+                  <strong
+                    className={result?.position_type === "long" ? "positive" : "negative"}
+                  >
+                    {result?.position_type?.toUpperCase() || "N/A"}
+                  </strong>
+                </div>
+                <div className="summary-item">
+                  <span>Entry Price:</span>{" "}
+                  <strong className="highlight">
+                    ${result?.entry_price?.toFixed(5) || "N/A"}
+                  </strong>
+                </div>
+                <div className="summary-item">
+                  <span>Live Price:</span>{" "}
+                  <strong className="highlight">
+                    ${result?.current_price?.toFixed(5) || "N/A"}
+                  </strong>
+                </div>
+                <div className="summary-item">
+                  <span>P/L:</span>{" "}
+                  <strong className={result?.profit_loss >= 0 ? "positive" : "negative"}>
+                    {result?.profit_loss || "N/A"}
+                  </strong>
+                </div>
+                <div className="summary-item">
+                  <span>Status:</span> <em>{result?.profitability_comment || "No Data"}</em>
+                </div>
+              </DetailedResultCard>
+              
+              <DetailedResultCard title="Risk Assessment" icon={<FaCog />}>
+                <div className="risk-assessment">
+                  <RiskGauge value={result?.risk_score || 45} label="Overall Risk" />
+                  <RiskGauge value={result?.volatility_score || 65} label="Volatility" />
+                  <RiskGauge value={result?.sentiment_score || 78} label="Sentiment" />
+                </div>
+              </DetailedResultCard>
             </div>
           </div>
         )}
@@ -326,25 +551,26 @@ const ResultTabs = ({ result }) => {
               <div className="levels-section">
                 <h5>Take Profit Targets</h5>
                 <div className="levels-list">
-                  <div className="level positive">
-                    T1: ${result?.targets_and_stoplosses?.tgt1?.toFixed(2) || "N/A"}
-                  </div>
-                  {result?.targets_and_stoplosses?.tgt2 && (
-                    <div className="level positive">
-                      T2: ${result?.targets_and_stoplosses?.tgt2?.toFixed(2) || "N/A"}
+                  {(result?.targets || []).map((target, idx) => (
+                    <div key={idx} className="level positive">
+                      T{idx + 1}: ${target?.toFixed(5) || "N/A"}
                     </div>
-                  )}
+                  ))}
                 </div>
               </div>
               <div className="levels-section">
                 <h5>Stop Loss Levels</h5>
                 <div className="levels-list">
-                  <div className="level negative">
-                    User SL: ${result?.targets_and_stoplosses?.user_sl?.toFixed(2) || "N/A"}
-                  </div>
-                  <div className="level negative">
-                    Market SL: ${result?.targets_and_stoplosses?.market_sl?.toFixed(2) || "N/A"}
-                  </div>
+                  {result?.user_stoploss && (
+                    <div className="level negative">
+                      User SL: ${result.user_stoploss?.toFixed(5) || "N/A"}
+                    </div>
+                  )}
+                  {(result?.market_stoplosses || []).map((sl, idx) => (
+                    <div key={idx} className="level negative">
+                      SL{idx + 1}: ${sl?.toFixed(5) || "N/A"}
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
@@ -355,28 +581,27 @@ const ResultTabs = ({ result }) => {
             <div className="result-card">
               <h4>Market Sentiment</h4>
               <div className="summary-item">
-                <span>Sentiment:</span>{" "}
-                <strong className="trend">{result?.sentiment?.toUpperCase() || "N/A"}</strong>
-              </div>
-              <div className="summary-item">
-                <span>Confidence:</span>{" "}
-                <strong>{result?.confidence || "N/A"}</strong>
+                <span>Overall Trend:</span>{" "}
+                <strong className="trend">{result?.market_trend?.toUpperCase() || "N/A"}</strong>
               </div>
               <div className="confidence-meter">
                 <div className="meter-bar">
                   <div
                     className="meter-fill long"
-                    style={{ width: `${confidenceMeter().long}%` }}
+                    style={{ width: `${result?.confidence_meter?.long || 0}%` }}
                   >
-                    Long: {confidenceMeter().long}%
+                    Long: {result?.confidence_meter?.long || 0}%
                   </div>
                   <div
                     className="meter-fill short"
-                    style={{ width: `${confidenceMeter().short}%` }}
+                    style={{ width: `${result?.confidence_meter?.short || 0}%` }}
                   >
-                    Short: {confidenceMeter().short}%
+                    Short: {result?.confidence_meter?.short || 0}%
                   </div>
                 </div>
+              </div>
+              <div className="summary-item">
+                <em>{result?.trend_comment || "No Comment"}</em>
               </div>
             </div>
           </div>
@@ -384,10 +609,15 @@ const ResultTabs = ({ result }) => {
         {activeTab === "chart-patterns" && (
           <div className="tab-panel">
             <div className="result-card">
-              <h4>Detected Patterns</h4>
+              <h4>Detected Chart Patterns</h4>
               <div className="patterns-list">
                 <div>
-                  Patterns: {(result?.patterns || []).join(", ") || "None Detected"}
+                  Candlesticks:{" "}
+                  {(result?.detected_patterns?.candlesticks || []).join(", ") || "None Detected"}
+                </div>
+                <div>
+                  Chart Patterns:{" "}
+                  {(result?.detected_patterns?.chart_patterns || []).join(", ") || "None Detected"}
                 </div>
               </div>
             </div>
@@ -399,8 +629,11 @@ const ResultTabs = ({ result }) => {
               <h4>Recommended Action</h4>
               <div className="action-recommend">
                 <strong className="trend">
-                  {result?.warning || "No specific action recommended"}
+                  {result?.recommended_action?.toUpperCase() || "HOLD"}
                 </strong>
+              </div>
+              <div className="action-details">
+                <p>{result?.action_reasoning || "No reasoning provided"}</p>
               </div>
             </div>
           </div>
@@ -411,7 +644,7 @@ const ResultTabs = ({ result }) => {
         <button className="cta-btn primary">Set Alert</button>
         <button className="cta-btn secondary">Save to History</button>
       </div>
-    </div>
+    </AnimatedCard>
   );
 };
 
@@ -436,27 +669,167 @@ const FAQItem = ({ question, answer }) => {
   );
 };
 
-// Premium Section Component (Redesigned)
+// Premium Section Component (Enhanced)
 const PremiumSection = () => {
+  const [selectedPlan, setSelectedPlan] = useState('monthly');
+  
+  const plans = {
+    monthly: {
+      price: '$29',
+      period: '/month',
+      features: [
+        'Unlimited daily analyses',
+        'Priority support',
+        'Early feature access',
+        'Custom analytics tools',
+        'Portfolio integration',
+        'Historical backtesting'
+      ]
+    },
+    yearly: {
+      price: '$290',
+      period: '/year',
+      features: [
+        'Everything in Monthly',
+        '2 months free',
+        'Exclusive market reports',
+        'Personalized AI advisor',
+        'Advanced charting tools',
+        'API access'
+      ],
+      savings: 'Save $58/year'
+    }
+  };
+
   return (
     <section className="premium-section">
+      <div className="pricing-header">
+        <h2>Choose Your Plan</h2>
+        <p>Unlock advanced analytics and insights</p>
+      </div>
+      
+      <div className="plan-toggle">
+        <button 
+          className={selectedPlan === 'monthly' ? 'active' : ''}
+          onClick={() => setSelectedPlan('monthly')}
+        >
+          Monthly
+        </button>
+        <button 
+          className={selectedPlan === 'yearly' ? 'active' : ''}
+          onClick={() => setSelectedPlan('yearly')}
+        >
+          Yearly
+          <span className="popular-badge">Popular</span>
+        </button>
+      </div>
+      
       <div className="pricing-card">
-        <h3 className="pricing-title">Pro</h3>
-        <p className="pricing-price">$29/mo</p>
-        <p className="pricing-description">Unlimited analyses with advanced insights</p>
+        <div className="pricing-card-header">
+          <h3 className="pricing-title">Pro Plan</h3>
+          <div className="pricing-amount">
+            <span className="price">{plans[selectedPlan].price}</span>
+            <span className="period">{plans[selectedPlan].period}</span>
+          </div>
+          {selectedPlan === 'yearly' && (
+            <div className="savings-badge">{plans[selectedPlan].savings}</div>
+          )}
+        </div>
+        
         <ul className="pricing-features">
-          <li><span className="feature-icon">✅</span> Unlimited daily analyses</li>
-          <li><span className="feature-icon">✅</span> Priority support</li>
-          <li><span className="feature-icon">✅</span> Early feature access</li>
-          <li><span className="feature-icon">✅</span> Custom analytics tools</li>
+          {plans[selectedPlan].features.map((feature, index) => (
+            <li key={index}>
+              <span className="feature-icon">✓</span>
+              {feature}
+            </li>
+          ))}
         </ul>
+        
         <Link href="/subscribe">
-          <button className="pricing-button">Subscribe Now</button>
+          <button className="pricing-button">Get Started</button>
         </Link>
+        
+        <div className="pricing-footer">
+          <p>7-day free trial • Cancel anytime</p>
+        </div>
       </div>
     </section>
   );
 };
+
+// Feature Highlight Component
+const FeatureHighlight = ({ icon, title, description }) => (
+  <AnimatedCard className="feature-highlight">
+    <div className="feature-icon">{icon}</div>
+    <h3>{title}</h3>
+    <p>{description}</p>
+  </AnimatedCard>
+);
+
+// Testimonials Component
+const Testimonials = () => {
+  const testimonials = [
+    {
+      text: "AIVISOR's risk zones are uncannily accurate. Saved me from a major loss last week.",
+      author: "Michael Rodriguez",
+      role: "BTC Futures Trader"
+    },
+    {
+      text: "The confidence meter gives me the edge I need. My win rate improved by 23% since using it.",
+      author: "Sarah Johnson",
+      role: "SOL Spot Trader"
+    },
+    {
+      text: "Clean, actionable insights. My go-to tool for perpetual contracts.",
+      author: "David Chen",
+      role: "ETH Options Trader"
+    }
+  ];
+
+  return (
+    <section id="testimonials" className="testimonials-section">
+      <h2>Trader Testimonials</h2>
+      <div className="carousel">
+        {testimonials.map((testimonial, index) => (
+          <AnimatedCard key={index} className="testimonial-card" delay={index * 0.1}>
+            <p>"{testimonial.text}"</p>
+            <cite>- {testimonial.author}, {testimonial.role}</cite>
+          </AnimatedCard>
+        ))}
+      </div>
+      <p className="stat">Trusted by 3,000+ traders globally.</p>
+    </section>
+  );
+};
+
+// Live Market Analysis Section
+const LiveMarketAnalysis = ({ marketData }) => (
+  <section className="market-analysis-section" id="market-analysis">
+    <div className="section-header">
+      <h2>Live Market Analysis</h2>
+      <div className="refresh-indicator">
+        <FaBolt className="bolt-icon" />
+        <span>Updated just now</span>
+      </div>
+    </div>
+    
+    <div className="market-grid">
+      <FearGreedIndicator 
+        value={marketData.fearGreed.value} 
+        status={marketData.fearGreed.status} 
+      />
+      
+      <TopVolumeCoins coins={marketData.topVolume} />
+      
+      <MarketDominance 
+        futures={marketData.dominance.futures} 
+        spot={marketData.dominance.spot} 
+      />
+      
+      <PriceTrend coins={marketData.priceTrend} />
+    </div>
+  </section>
+);
 
 export default function Home() {
   const { user, loading: authLoading } = useAuth();
@@ -473,28 +846,156 @@ export default function Home() {
   const [showLoginPopup, setShowLoginPopup] = useState(false);
   const [analysisCount, setAnalysisCount] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [theme, setTheme] = useState('light');
+  const [tickerData, setTickerData] = useState([
+    { symbol: 'BTC', price: '64,720.09', change: 2.3 },
+    { symbol: 'ETH', price: '3,420.00', change: -1.2 },
+    { symbol: 'SOL', price: '142.00', change: 5.7 }
+  ]);
+  const [stats, setStats] = useState({
+    activeUsers: "2,847",
+    analysesToday: "11,892",
+    accuracyRate: "82"
+  });
+  const [marketData, setMarketData] = useState({
+    fearGreed: { value: 65, status: 'GREED' },
+    topVolume: [
+      { symbol: 'BTCUSDT', volume: '1.2B' },
+      { symbol: 'ETHUSDT', volume: '850M' },
+      { symbol: 'SOLUSDT', volume: '420M' },
+      { symbol: 'BNBUSDT', volume: '380M' },
+      { symbol: 'XRPUSDT', volume: '310M' }
+    ],
+    dominance: {
+      futures: [
+        { symbol: 'BTC', dominance: '52.3' },
+        { symbol: 'ETH', dominance: '18.7' },
+        { symbol: 'SOL', dominance: '7.2' },
+        { symbol: 'BNB', dominance: '4.8' },
+        { symbol: 'ADA', dominance: '3.1' }
+      ],
+      spot: [
+        { symbol: 'BTC', dominance: '48.7' },
+        { symbol: 'ETH', dominance: '19.2' },
+        { symbol: 'USDT', dominance: '8.3' },
+        { symbol: 'SOL', dominance: '6.1' },
+        { symbol: 'BNB', dominance: '3.8' }
+      ]
+    },
+    priceTrend: [
+      { symbol: 'BTCUSDT', change: 5.2 },
+      { symbol: 'ETHUSDT', change: 3.8 },
+      { symbol: 'SOLUSDT', change: 12.5 },
+      { symbol: 'BNBUSDT', change: -2.1 },
+      { symbol: 'AVAXUSDT', change: 8.7 }
+    ]
+  });
 
   const dashboardRef = useRef(null);
 
+  // Initialize theme from localStorage or system preference
   useEffect(() => {
     if (typeof window !== "undefined") {
-      // Load analysis count only if not logged in, reset for logged-in users
-      if (!user) {
-        const count = parseInt(localStorage.getItem("aivisorAnalysisCount") || "0");
-        setAnalysisCount(count);
-      } else {
-        setAnalysisCount(0); // Reset count for logged-in users
-        localStorage.removeItem("aivisorAnalysisCount"); // Optional: Clear stored count
+      const savedTheme = localStorage.getItem('theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      
+      if (savedTheme) {
+        setTheme(savedTheme);
+      } else if (prefersDark) {
+        setTheme('dark');
       }
+      
+      const count = parseInt(localStorage.getItem("aivisorAnalysisCount") || "0");
+      setAnalysisCount(count);
+      
+      // Simulate stats updates
+      const statsInterval = setInterval(() => {
+        setStats(prev => ({
+          activeUsers: `${Math.floor(Math.random() * 1000) + 2500}`.replace(/\B(?=(\d{3})+(?!\d))/g, ","),
+          analysesToday: `${parseInt(prev.analysesToday.replace(/,/g, "")) + Math.floor(Math.random() * 100) + 50}`.replace(/\B(?=(\d{3})+(?!\d))/g, ","),
+          accuracyRate: `${Math.min(85, Math.max(70, parseInt(prev.accuracyRate) + (Math.random() > 0.5 ? 1 : -1)))}`
+        }));
+      }, 60000); // Update every minute
+      
+      return () => {
+        clearInterval(statsInterval);
+      };
     }
-  }, [user]);
+  }, []);
+
+  // Apply theme changes to document
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem('theme', theme);
+    }
+  }, [theme]);
+
+  // Fetch real market data from Bybit API
+  useEffect(() => {
+    const fetchMarketData = async () => {
+      try {
+        // Fetch ticker data
+        const tickerRes = await fetch('https://api.bybit.com/v5/market/tickers?category=spot');
+        const tickerData = await tickerRes.json();
+        
+        // Process ticker data for top coins
+        const topCoins = tickerData.result.list
+          .filter(coin => ['BTCUSDT', 'ETHUSDT', 'SOLUSDT'].includes(coin.symbol))
+          .map(coin => ({
+            symbol: coin.symbol.replace('USDT', ''),
+            price: parseFloat(coin.lastPrice).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+            change: parseFloat(coin.price24hPcnt) * 100
+          }));
+        
+        setTickerData(topCoins);
+        
+        // Fetch Fear & Greed Index (using alternative API)
+        const fearGreedRes = await fetch('https://api.alternative.me/fng/?limit=1');
+        const fearGreedData = await fearGreedRes.json();
+        const fearGreedValue = parseInt(fearGreedData.data[0].value);
+        const fearGreedStatus = fearGreedData.data[0].value_classification;
+        
+        // Fetch top volume coins
+        const volumeRes = await fetch('https://api.bybit.com/v5/market/tickers?category=spot');
+        const volumeData = await volumeRes.json();
+        const topVolume = volumeData.result.list
+          .filter(coin => coin.symbol.endsWith('USDT'))
+          .sort((a, b) => parseFloat(b.turnover24h) - parseFloat(a.turnover24h))
+          .slice(0, 5)
+          .map(coin => ({
+            symbol: coin.symbol,
+            volume: `$${(parseFloat(coin.turnover24h) / 1000000).toFixed(0)}M`
+          }));
+        
+        // Update state with real data
+        setMarketData(prev => ({
+          ...prev,
+          fearGreed: { value: fearGreedValue, status: fearGreedStatus },
+          topVolume
+        }));
+      } catch (error) {
+        console.error('Error fetching market data:', error);
+      }
+    };
+
+    // Fetch data immediately and then every 30 seconds
+    fetchMarketData();
+    const interval = setInterval(fetchMarketData, 30000);
+    
+    return () => clearInterval(interval);
+  }, []);
+
+  const toggleTheme = () => {
+    setTheme(prev => prev === 'light' ? 'dark' : 'light');
+  };
 
   const scrollToDashboard = () => {
     dashboardRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   const saveHistory = (input, resultData) => {
-    if (typeof window === "undefined") return; // Prevent server-side execution
+    if (typeof window === "undefined") return;
     try {
       const history = JSON.parse(localStorage.getItem("aivisorHistory") || "[]");
       const item = { timestamp: Date.now(), input, result: resultData };
@@ -508,7 +1009,7 @@ export default function Home() {
   };
 
   const incrementAnalysisCount = () => {
-    if (typeof window !== "undefined" && !user) { // Only increment for unauthenticated users
+    if (typeof window !== "undefined") {
       const newCount = analysisCount + 1;
       setAnalysisCount(newCount);
       localStorage.setItem("aivisorAnalysisCount", newCount.toString());
@@ -516,7 +1017,7 @@ export default function Home() {
   };
 
   const submitData = async () => {
-    if (typeof window === "undefined") return; // Prevent server-side execution
+    if (typeof window === "undefined") return;
 
     if (!user && analysisCount >= 2) {
       setShowLoginPopup(true);
@@ -525,7 +1026,7 @@ export default function Home() {
 
     setResult(null);
     setError(null);
-    if (!coin || !entryPrice || !quantity || !timeframe) {
+    if (!coin || !entryPrice || !quantity) {
       return alert("ERROR: Input parameters missing. Initiate full data sequence.");
     }
     const parsedEntryPrice = parseFloat(entryPrice);
@@ -536,18 +1037,21 @@ export default function Home() {
     const inputData = {
       coin,
       market,
-      positionType,
       timeframe,
+      positionType,
       entryPrice: parsedEntryPrice,
       quantity: parsedQuantity,
     };
     const data = {
+      asset_class: "crypto",
       coin: coin.toUpperCase(),
       market: market.toLowerCase(),
-      position_type: positionType.toLowerCase(),
       timeframe: timeframe.toLowerCase(),
+      position_type: positionType.toLowerCase(),
       entry_price: parsedEntryPrice,
       quantity: parsedQuantity,
+      has_both_positions: false,
+      risk_pct: 0.02,
     };
     setLoading(true);
     try {
@@ -568,7 +1072,7 @@ export default function Home() {
       const resultData = await response.json();
       setResult(resultData);
       saveHistory(inputData, resultData);
-      incrementAnalysisCount(); // Only increments if not logged in
+      incrementAnalysisCount();
     } catch (err) {
       setError(err.message);
     } finally {
@@ -577,7 +1081,7 @@ export default function Home() {
   };
 
   if (authLoading) {
-    return <div>Loading...</div>;
+    return <div className="loading-page">Loading...</div>;
   }
 
   return (
@@ -589,7 +1093,6 @@ export default function Home() {
           content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
         />
         <meta name="description" content="AI-powered crypto position analytics for traders." />
-        <link rel="manifest" href="/manifest.json" />
         <link
           href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
           rel="stylesheet"
@@ -599,18 +1102,18 @@ export default function Home() {
       <header className="header">
         <div className="header-content">
           <div className="logo-section">
-            <div className="logo-icon">🤖</div>
             <span style={logoFont}>AIVISOR</span>
-            <span className="version-tag">[V3.2]</span>
           </div>
           <nav className={`nav-links ${menuOpen ? "open" : ""}`}>
             <Link href="#features" onClick={() => setMenuOpen(false)}>Features</Link>
             <Link href="#howitworks" onClick={() => setMenuOpen(false)}>How It Works</Link>
+            <Link href="#market-analysis" onClick={() => setMenuOpen(false)}>Market Analysis</Link>
             <Link href="#faq" onClick={() => setMenuOpen(false)}>FAQ</Link>
             <Link href="/support" onClick={() => setMenuOpen(false)}>Support</Link>
             <Link href="/login" onClick={() => setMenuOpen(false)}>Login</Link>
           </nav>
           <div className="header-actions">
+            <ThemeToggle theme={theme} toggleTheme={toggleTheme} />
             <span className="user-greeting">
               {user ? `Hello, ${user.email.split("@")[0]}` : "Hello, Trader"}
             </span>
@@ -628,16 +1131,30 @@ export default function Home() {
         </div>
       </header>
 
-      <Hero scrollToDashboard={scrollToDashboard} />
+      <Hero scrollToDashboard={scrollToDashboard} tickerData={tickerData} theme={theme} stats={stats} />
 
       <section id="mission" className="mission-section">
-        <div className="mission-card">
+        <AnimatedCard className="mission-card">
           <h2>Execute Neural Analysis</h2>
           <p>
             AIVISOR harnesses xAI-grade models to process live market data, technical indicators, and
             sentiment for precise position insights. <strong>Public Beta: Live</strong>
           </p>
-        </div>
+          <div className="mission-stats">
+            <div className="stat-item">
+              <span className="stat-value">99.9%</span>
+              <span className="stat-label">Uptime</span>
+            </div>
+            <div className="stat-item">
+              <span className="stat-value">&lt;100ms</span>
+              <span className="stat-label">Response Time</span>
+            </div>
+            <div className="stat-item">
+              <span className="stat-value">24/7</span>
+              <span className="stat-label">Monitoring</span>
+            </div>
+          </div>
+        </AnimatedCard>
       </section>
 
       <main className="dashboard" ref={dashboardRef}>
@@ -646,10 +1163,10 @@ export default function Home() {
           setCoin={setCoin}
           market={market}
           setMarket={setMarket}
-          positionType={positionType}
-          setPositionType={setPositionType}
           timeframe={timeframe}
           setTimeframe={setTimeframe}
+          positionType={positionType}
+          setPositionType={setPositionType}
           entryPrice={entryPrice}
           setEntryPrice={setEntryPrice}
           quantity={quantity}
@@ -663,76 +1180,61 @@ export default function Home() {
         <RecentHistory />
       </main>
 
+      <LiveMarketAnalysis marketData={marketData} />
+
       <section id="howitworks" className="section-grid">
         <h2>How It Works</h2>
         <div className="grid-4">
-          <div className="step-card">
+          <AnimatedCard className="step-card" delay={0.1}>
             <div className="step-icon">1</div>
             <h3>Connect</h3>
             <p>Input your trade parameters.</p>
-          </div>
-          <div className="step-card">
+          </AnimatedCard>
+          <AnimatedCard className="step-card" delay={0.2}>
             <div className="step-icon">2</div>
             <h3>Analyze</h3>
             <p>AI processes real-time signals.</p>
-          </div>
-          <div className="step-card">
+          </AnimatedCard>
+          <AnimatedCard className="step-card" delay={0.3}>
             <div className="step-icon">3</div>
             <h3>Act</h3>
             <p>Get precise targets & stops.</p>
-          </div>
-          <div className="step-card">
+          </AnimatedCard>
+          <AnimatedCard className="step-card" delay={0.4}>
             <div className="step-icon">4</div>
             <h3>Optimize</h3>
             <p>Refine with AI insights.</p>
-          </div>
+          </AnimatedCard>
         </div>
       </section>
 
       <section id="features" className="section-grid">
         <h2>Core Features</h2>
         <div className="grid-4">
-          <div className="feature-card">
-            <div className="feature-icon">⚡</div>
-            <h3>Live Data</h3>
-            <p>Real-time market feeds.</p>
-          </div>
-          <div className="feature-card">
-            <div className="feature-icon">🧠</div>
-            <h3>AI Models</h3>
-            <p>Deep learning on crypto data.</p>
-          </div>
-          <div className="feature-card">
-            <div className="feature-icon">🛡️</div>
-            <h3>Risk Zones</h3>
-            <p>Dynamic SL/TP levels.</p>
-          </div>
-          <div className="feature-card">
-            <div className="feature-icon">📊</div>
-            <h3>Multi-Timeframe</h3>
-            <p>Insights for 1h, 4h, 1d timeframes.</p>
-          </div>
+          <FeatureHighlight 
+            icon="⚡" 
+            title="Live Data" 
+            description="Real-time market feeds with millisecond updates." 
+          />
+          <FeatureHighlight 
+            icon="🧠" 
+            title="AI Models" 
+            description="Deep learning on crypto data with continuous training." 
+          />
+          <FeatureHighlight 
+            icon="🛡️" 
+            title="Risk Zones" 
+            description="Dynamic SL/TP levels based on volatility clusters." 
+          />
+          <FeatureHighlight 
+            icon="📊" 
+            title="Multi-Timeframe" 
+            description="Analysis across 15m, 1h, and 4h timeframes." 
+          />
         </div>
       </section>
 
-      <section id="testimonials" className="testimonials-section">
-        <h2>Testimonials</h2>
-        <div className="carousel">
-          <div className="testimonial-card">
-            <p>"AIVISOR's risk zones are uncannily accurate."</p>
-            <cite>- Alpha Trader, BTC Futures</cite>
-          </div>
-          <div className="testimonial-card">
-            <p>"Confidence meter gives me the edge I need."</p>
-            <cite>- Beta User, SOL Spot</cite>
-          </div>
-          <div className="testimonial-card">
-            <p>"Clean, actionable—my go-to for perps."</p>
-            <cite>- Gamma Pro, ETH</cite>
-          </div>
-        </div>
-        <p className="stat">Trusted by 3,000+ traders globally.</p>
-      </section>
+      <Testimonials />
 
       <section id="faq" className="faq-section">
         <h2>FAQ</h2>
@@ -747,6 +1249,10 @@ export default function Home() {
         <FAQItem
           question="Futures vs. Spot analysis?"
           answer="Futures includes leverage; Spot focuses on trends."
+        />
+        <FAQItem
+          question="Can I export reports?"
+          answer="Yes, premium users can export PDF reports with custom branding."
         />
       </section>
 
@@ -768,6 +1274,8 @@ export default function Home() {
           <li>Q4 2025: Portfolio Sync (Read-Only)</li>
           <li>Q1 2026: Backtesting Module</li>
           <li>Q1 2026: Forex Pairs</li>
+          <li>Q2 2026: Mobile App Release</li>
+          <li>Q3 2026: AI-Powered Alerts</li>
         </ul>
       </section>
 
@@ -796,17 +1304,38 @@ export default function Home() {
       <style jsx global>{`
         :root {
           --bg-primary: #FFFFFF;
-          --bg-card: #F8FBFF;
+          --bg-secondary: #F8FBFF;
+          --bg-card: #FFFFFF;
           --accent-blue: #43C0F6;
+          --accent-purple: #7A5CFF;
           --text-primary: #333333;
-          --text-muted: #6B7280;
+          --text-secondary: #6B7280;
+          --text-muted: #9CA3AF;
           --success: #3ED598;
           --error: #EF4444;
+          --warning: #F59E0B;
           --button-gradient: linear-gradient(135deg, #43C0F6, #3AEAB6);
-          --border-soft: #E5E7EB;
-          --shadow-subtle: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-          --shadow-hover: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-          --shadow-glow: 0 0 15px rgba(67, 192, 246, 0.3);
+          --border-light: #E5E7EB;
+          --border-medium: #D1D5DB;
+          --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+          --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+          --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+          --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+          --radius-sm: 0.25rem;
+          --radius-md: 0.5rem;
+          --radius-lg: 0.75rem;
+          --radius-xl: 1rem;
+        }
+
+        [data-theme="dark"] {
+          --bg-primary: #0F172A;
+          --bg-secondary: #1E293B;
+          --bg-card: #1E293B;
+          --text-primary: #F1F5F9;
+          --text-secondary: #CBD5E1;
+          --text-muted: #94A3B8;
+          --border-light: #334155;
+          --border-medium: #475569;
         }
 
         * {
@@ -822,6 +1351,7 @@ export default function Home() {
           line-height: 1.6;
           overflow-x: hidden;
           position: relative;
+          transition: background-color 0.3s, color 0.3s;
         }
 
         body::before {
@@ -836,14 +1366,23 @@ export default function Home() {
           z-index: -1;
         }
 
+        [data-theme="dark"] body::before {
+          background: linear-gradient(135deg, rgba(67, 192, 246, 0.03) 0%, rgba(58, 234, 182, 0.03) 100%);
+        }
+
         .header {
           position: sticky;
           top: 0;
           z-index: 100;
           background: rgba(255, 255, 255, 0.95);
           backdrop-filter: blur(20px);
-          border-bottom: 1px solid var(--border-soft);
+          border-bottom: 1px solid var(--border-light);
           padding: 0.5rem 0;
+        }
+
+        [data-theme="dark"] .header {
+          background: rgba(15, 23, 42, 0.95);
+          border-bottom: 1px solid var(--border-light);
         }
 
         .header-content {
@@ -862,18 +1401,6 @@ export default function Home() {
           gap: 0.5rem;
         }
 
-        .logo-icon {
-          font-size: 1.5rem;
-        }
-
-        .version-tag {
-          background: var(--accent-blue);
-          color: #FFFFFF;
-          padding: 0.15rem 0.3rem;
-          border-radius: 0.3rem;
-          font-size: 0.6rem;
-        }
-
         .nav-links {
           display: flex;
           gap: 1.5rem;
@@ -881,7 +1408,7 @@ export default function Home() {
         }
 
         .nav-links a {
-          color: var(--text-muted);
+          color: var(--text-secondary);
           text-decoration: none;
           font-size: 0.9rem;
           font-weight: 500;
@@ -902,14 +1429,31 @@ export default function Home() {
           width: 100%;
           background: rgba(255, 255, 255, 0.95);
           padding: 1rem;
-          border-bottom: 1px solid var(--border-soft);
-          box-shadow: var(--shadow-subtle);
+          border-bottom: 1px solid var(--border-light);
+          box-shadow: var(--shadow-md);
+        }
+
+        [data-theme="dark"] .nav-links.open {
+          background: rgba(15, 23, 42, 0.95);
         }
 
         .header-actions {
           display: flex;
           align-items: center;
-          gap: 0.5rem;
+          gap: 0.75rem;
+        }
+
+        .theme-toggle {
+          background: none;
+          border: none;
+          color: var(--text-secondary);
+          cursor: pointer;
+          font-size: 1.25rem;
+          transition: color 0.3s;
+        }
+
+        .theme-toggle:hover {
+          color: var(--accent-blue);
         }
 
         .user-greeting {
@@ -921,7 +1465,7 @@ export default function Home() {
 
         .profile-icon, .menu-icon {
           font-size: 1.5rem;
-          color: var(--text-muted);
+          color: var(--text-secondary);
           cursor: pointer;
           transition: color 0.3s;
         }
@@ -930,7 +1474,7 @@ export default function Home() {
           color: var(--accent-blue);
         }
 
-        .login-btn, .support-btn, .pay-btn, .quick-demo {
+        .login-btn, .support-btn, .pay-btn, .quick-demo, .pricing-button {
           background: var(--button-gradient);
           color: #FFFFFF;
           padding: 0.75rem 1.5rem;
@@ -939,10 +1483,14 @@ export default function Home() {
           font-weight: 600;
           cursor: pointer;
           transition: all 0.3s;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.5rem;
         }
 
-        .login-btn:hover, .support-btn:hover, .pay-btn:hover, .quick-demo:hover {
-          box-shadow: var(--shadow-hover);
+        .login-btn:hover, .support-btn:hover, .pay-btn:hover, .quick-demo:hover, .pricing-button:hover {
+          box-shadow: var(--shadow-lg);
           transform: translateY(-2px);
         }
 
@@ -950,6 +1498,12 @@ export default function Home() {
           padding: 6rem 2rem;
           text-align: center;
           position: relative;
+          overflow: hidden;
+          background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+        }
+
+        [data-theme="dark"] .hero {
+          background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
         }
 
         .ticker {
@@ -961,16 +1515,34 @@ export default function Home() {
           border-radius: 2rem;
           font-size: 0.9rem;
           color: var(--accent-blue);
-          border: 1px solid var(--border-soft);
+          border: 1px solid var(--border-light);
+          display: flex;
+          gap: 1rem;
+          animation: ticker-scroll 30s linear infinite;
+        }
+
+        .ticker-item {
+          white-space: nowrap;
         }
 
         .ticker-change.positive {
           color: var(--success);
         }
 
+        .ticker-change.negative {
+          color: var(--error);
+        }
+
+        @keyframes ticker-scroll {
+          0% { transform: translateX(100%); }
+          100% { transform: translateX(-100%); }
+        }
+
         .hero-content {
           max-width: 800px;
           margin: 0 auto;
+          position: relative;
+          z-index: 2;
         }
 
         .hero-title {
@@ -981,21 +1553,99 @@ export default function Home() {
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           margin-bottom: 1rem;
+          animation: gradient-shift 3s ease-in-out infinite alternate;
+        }
+
+        @keyframes gradient-shift {
+          0% { background-position: 0% 50%; }
+          100% { background-position: 100% 50%; }
         }
 
         .aivi { color: var(--accent-blue); }
-        .visor { color: var(--accent-blue); }
+        .visor { color: var(--accent-purple); }
 
         .hero-subtitle {
-          color: var(--text-muted);
+          color: var(--text-secondary);
           font-size: 1.2rem;
           letter-spacing: 0.05em;
           margin-bottom: 2rem;
         }
 
-        .quick-demo:hover {
-          box-shadow: var(--shadow-hover);
-          transform: scale(1.05);
+        .hero-stats {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: 1.5rem;
+          margin-top: 3rem;
+        }
+
+        .floating-elements {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          pointer-events: none;
+          z-index: 1;
+        }
+
+        .floating-element {
+          position: absolute;
+          width: 100px;
+          height: 100px;
+          border-radius: 50%;
+          opacity: 0.1;
+          animation: float 15s infinite ease-in-out;
+        }
+
+        @keyframes float {
+          0% { transform: translateY(0) translateX(0) rotate(0deg); opacity: 0.1; }
+          50% { transform: translateY(-100px) translateX(50px) rotate(180deg); opacity: 0.15; }
+          100% { transform: translateY(0) translateX(0) rotate(360deg); opacity: 0.1; }
+        }
+
+        .stat-card {
+          background: var(--bg-card);
+          border-radius: var(--radius-lg);
+          padding: 1.5rem;
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+          box-shadow: var(--shadow-md);
+          border: 1px solid var(--border-light);
+          transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+          transform: translateY(-5px);
+          box-shadow: var(--shadow-lg);
+        }
+
+        .stat-icon {
+          font-size: 2rem;
+          color: var(--accent-blue);
+        }
+
+        .stat-content h3 {
+          font-size: 1.5rem;
+          margin-bottom: 0.25rem;
+        }
+
+        .stat-content p {
+          color: var(--text-secondary);
+          font-size: 0.9rem;
+        }
+
+        .trend {
+          font-size: 0.8rem;
+          font-weight: 600;
+        }
+
+        .trend.positive {
+          color: var(--success);
+        }
+
+        .trend.negative {
+          color: var(--error);
         }
 
         .mission-section {
@@ -1008,9 +1658,9 @@ export default function Home() {
           margin: 0 auto;
           padding: 2rem;
           background: var(--bg-card);
-          border-radius: 1rem;
-          box-shadow: var(--shadow-subtle);
-          border: 1px solid var(--border-soft);
+          border-radius: var(--radius-lg);
+          box-shadow: var(--shadow-md);
+          border: 1px solid var(--border-light);
         }
 
         .mission-card h2 {
@@ -1020,8 +1670,31 @@ export default function Home() {
         }
 
         .mission-card p {
-          color: var(--text-muted);
+          color: var(--text-secondary);
           font-size: 1.1rem;
+          margin-bottom: 2rem;
+        }
+
+        .mission-stats {
+          display: flex;
+          justify-content: space-around;
+          gap: 1rem;
+        }
+
+        .stat-item {
+          text-align: center;
+        }
+
+        .stat-value {
+          display: block;
+          font-size: 1.5rem;
+          font-weight: 700;
+          color: var(--accent-blue);
+        }
+
+        .stat-label {
+          color: var(--text-secondary);
+          font-size: 0.9rem;
         }
 
         .dashboard {
@@ -1030,31 +1703,127 @@ export default function Home() {
           padding: 0 1rem;
         }
 
-        .wizard, .result-tabs, .premium-section, .history-section {
+        .animated-card {
           background: var(--bg-card);
-          border-radius: 1rem;
-          padding: 3rem;
-          box-shadow: var(--shadow-subtle);
+          border-radius: var(--radius-lg);
+          padding: 2rem;
+          box-shadow: var(--shadow-md);
           max-width: 900px;
           margin: 0 auto;
           overflow: hidden;
-          border: 1px solid var(--border-soft);
+          border: 1px solid var(--border-light);
+          animation: card-fade-in 0.6s ease-out forwards;
+          opacity: 0;
+          transform: translateY(20px);
         }
 
-        .premium-section .pricing-card {
+        @keyframes card-fade-in {
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .wizard, .result-tabs, .premium-section, .history-section {
           background: var(--bg-card);
-          border-radius: 12px;
+          border-radius: var(--radius-lg);
           padding: 2rem;
-          box-shadow: var(--shadow-subtle);
-          text-align: center;
-          max-width: 300px;
-          margin: 0 auto;
-          transition: transform 0.3s, box-shadow 0.3s;
+          box-shadow: var(--shadow-md);
+          max-width: 900px;
+          margin: 2rem auto;
+          overflow: hidden;
+          border: 1px solid var(--border-light);
         }
 
-        .premium-section .pricing-card:hover {
-          transform: translateY(-5px);
-          box-shadow: var(--shadow-hover), var(--shadow-glow);
+        .premium-section {
+          max-width: 1200px;
+          padding: 3rem 2rem;
+          background: var(--bg-secondary);
+          border: none;
+        }
+
+        [data-theme="dark"] .premium-section {
+          background: var(--bg-primary);
+        }
+
+        .pricing-header {
+          text-align: center;
+          margin-bottom: 2rem;
+        }
+
+        .pricing-header h2 {
+          font-size: 2rem;
+          margin-bottom: 0.5rem;
+        }
+
+        .pricing-header p {
+          color: var(--text-secondary);
+          font-size: 1.1rem;
+        }
+
+        .plan-toggle {
+          display: flex;
+          justify-content: center;
+          margin-bottom: 2rem;
+          background: var(--bg-card);
+          border-radius: var(--radius-md);
+          padding: 0.25rem;
+          max-width: 300px;
+          margin: 0 auto 2rem;
+          border: 1px solid var(--border-light);
+        }
+
+        [data-theme="dark"] .plan-toggle {
+          background: var(--bg-secondary);
+        }
+
+        .plan-toggle button {
+          flex: 1;
+          padding: 0.75rem;
+          background: none;
+          border: none;
+          font-weight: 600;
+          cursor: pointer;
+          position: relative;
+          border-radius: var(--radius-sm);
+          transition: all 0.3s;
+        }
+
+        .plan-toggle button.active {
+          background: var(--button-gradient);
+          color: white;
+        }
+
+        .popular-badge {
+          position: absolute;
+          top: -8px;
+          right: -8px;
+          background: var(--warning);
+          color: white;
+          font-size: 0.6rem;
+          padding: 0.1rem 0.3rem;
+          border-radius: 0.25rem;
+        }
+
+        .pricing-card {
+          max-width: 400px;
+          margin: 0 auto;
+          background: var(--bg-card);
+          border-radius: var(--radius-lg);
+          padding: 2rem;
+          box-shadow: var(--shadow-lg);
+          border: 1px solid var(--border-light);
+          text-align: center;
+          position: relative;
+          overflow: hidden;
+        }
+
+        [data-theme="dark"] .pricing-card {
+          background: var(--bg-secondary);
+        }
+
+        .pricing-card-header {
+          margin-bottom: 2rem;
         }
 
         .pricing-title {
@@ -1064,50 +1833,62 @@ export default function Home() {
           margin-bottom: 1rem;
         }
 
-        .pricing-price {
-          color: var(--accent-blue);
-          font-size: 2rem;
-          font-weight: 700;
-          margin-bottom: 0.5rem;
+        .pricing-amount {
+          margin-bottom: 1rem;
         }
 
-        .pricing-description {
-          color: var(--text-muted);
-          font-size: 0.9rem;
-          margin-bottom: 1.5rem;
+        .price {
+          font-size: 2.5rem;
+          font-weight: 700;
+          color: var(--accent-blue);
+        }
+
+        .period {
+          color: var(--text-secondary);
+          font-size: 1rem;
+        }
+
+        .savings-badge {
+          background: rgba(62, 213, 152, 0.1);
+          color: var(--success);
+          padding: 0.25rem 0.5rem;
+          border-radius: var(--radius-sm);
+          font-size: 0.8rem;
+          font-weight: 600;
+          display: inline-block;
+          margin-top: 0.5rem;
         }
 
         .pricing-features {
           list-style: none;
           text-align: left;
-          margin-bottom: 1.5rem;
-          padding: 0 1rem;
+          margin-bottom: 2rem;
+          padding: 0;
         }
 
         .pricing-features li {
           color: var(--text-primary);
-          font-size: 0.9rem;
-          margin-bottom: 0.5rem;
+          font-size: 0.95rem;
+          margin-bottom: 1rem;
+          display: flex;
+          align-items: center;
+          padding-left: 1.5rem;
+          position: relative;
         }
 
         .feature-icon {
-          margin-right: 0.5rem;
+          position: absolute;
+          left: 0;
+          color: var(--success);
+          font-weight: bold;
         }
 
-        .pricing-button {
-          background: var(--button-gradient);
-          color: #FFFFFF;
-          padding: 0.75rem 1.5rem;
-          border: none;
-          border-radius: 2rem;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.3s;
-        }
-
-        .pricing-button:hover {
-          transform: translateY(-2px);
-          box-shadow: var(--shadow-hover);
+        .pricing-footer {
+          margin-top: 1.5rem;
+          padding-top: 1.5rem;
+          border-top: 1px solid var(--border-light);
+          color: var(--text-secondary);
+          font-size: 0.9rem;
         }
 
         .history-section h3 {
@@ -1125,20 +1906,21 @@ export default function Home() {
 
         .history-card {
           display: block;
-          background: #FFFFFF;
+          background: var(--bg-card);
           padding: 1rem;
-          border-radius: 0.75rem;
+          border-radius: var(--radius-md);
           border-left: 4px solid var(--accent-blue);
           text-decoration: none;
           color: var(--text-primary);
           transition: all 0.3s;
-          box-shadow: var(--shadow-subtle);
+          box-shadow: var(--shadow-sm);
+          border: 1px solid var(--border-light);
         }
 
         .history-card:hover {
-          background: var(--bg-card);
+          background: var(--bg-secondary);
           transform: translateX(5px);
-          box-shadow: var(--shadow-hover);
+          box-shadow: var(--shadow-md);
         }
 
         .history-preview {
@@ -1148,7 +1930,7 @@ export default function Home() {
         }
 
         .history-date {
-          color: var(--text-muted);
+          color: var(--text-secondary);
           font-size: 0.9rem;
         }
 
@@ -1160,7 +1942,7 @@ export default function Home() {
         }
 
         .progress-bar {
-          background: #E5E7EB;
+          background: var(--bg-secondary);
           height: 0.5rem;
           border-radius: 0.25rem;
           margin-bottom: 1.5rem;
@@ -1179,7 +1961,7 @@ export default function Home() {
           top: -1.5rem;
           right: 0;
           font-size: 0.8rem;
-          color: var(--text-muted);
+          color: var(--text-secondary);
         }
 
         .wizard-step {
@@ -1199,17 +1981,27 @@ export default function Home() {
 
         .coin-suggest {
           position: relative;
+          margin-bottom: 1.5rem;
+        }
+
+        .input-wrapper {
+          position: relative;
+          margin-bottom: 1rem;
         }
 
         .input-field {
           width: 100%;
-          padding: 1rem;
-          background: #FFFFFF;
-          border: 1px solid var(--border-soft);
-          border-radius: 0.5rem;
+          padding: 1rem 1rem 1rem 3rem;
+          background: var(--bg-card);
+          border: 1px solid var(--border-light);
+          border-radius: var(--radius-md);
           color: var(--text-primary);
           font-size: 1rem;
           transition: all 0.3s;
+        }
+
+        [data-theme="dark"] .input-field {
+          background: var(--bg-secondary);
         }
 
         .input-field:focus {
@@ -1222,20 +2014,43 @@ export default function Home() {
           padding-right: 2rem;
         }
 
+        .input-icon {
+          position: absolute;
+          left: 1rem;
+          top: 50%;
+          transform: translateY(-50%);
+          color: var(--text-secondary);
+        }
+
+        .timeframe-selector {
+          margin-bottom: 1.5rem;
+        }
+
+        .timeframe-selector label {
+          display: block;
+          margin-bottom: 0.5rem;
+          color: var(--text-primary);
+          font-weight: 500;
+        }
+
         .toggle-group {
           display: flex;
-          background: #FFFFFF;
+          background: var(--bg-card);
           border-radius: 2rem;
           overflow: hidden;
           margin-bottom: 1.5rem;
-          border: 1px solid var(--border-soft);
+          border: 1px solid var(--border-light);
+        }
+
+        [data-theme="dark"] .toggle-group {
+          background: var(--bg-secondary);
         }
 
         .toggle-option {
           flex: 1;
           padding: 0.75rem;
           text-align: center;
-          color: var(--text-muted);
+          color: var(--text-secondary);
           background: none;
           border: none;
           cursor: pointer;
@@ -1266,7 +2081,7 @@ export default function Home() {
         .nav-btn {
           padding: 0.75rem 1.5rem;
           border: none;
-          border-radius: 0.5rem;
+          border-radius: var(--radius-md);
           font-size: 1rem;
           font-weight: 600;
           cursor: pointer;
@@ -1274,9 +2089,13 @@ export default function Home() {
         }
 
         .nav-btn.secondary {
-          background: #FFFFFF;
-          color: var(--text-muted);
-          border: 1px solid var(--border-soft);
+          background: var(--bg-card);
+          color: var(--text-secondary);
+          border: 1px solid var(--border-light);
+        }
+
+        [data-theme="dark"] .nav-btn.secondary {
+          background: var(--bg-secondary);
         }
 
         .nav-btn:not(.secondary) {
@@ -1286,7 +2105,7 @@ export default function Home() {
 
         .nav-btn:hover:not(:disabled) {
           transform: translateY(-2px);
-          box-shadow: var(--shadow-hover);
+          box-shadow: var(--shadow-md);
         }
 
         .nav-btn:disabled {
@@ -1300,7 +2119,7 @@ export default function Home() {
           background: var(--button-gradient);
           color: #FFFFFF;
           border: none;
-          border-radius: 0.5rem;
+          border-radius: var(--radius-md);
           font-size: 1.1rem;
           font-weight: 600;
           cursor: pointer;
@@ -1309,7 +2128,7 @@ export default function Home() {
 
         .analyze-btn:hover:not(:disabled) {
           transform: translateY(-2px);
-          box-shadow: var(--shadow-hover);
+          box-shadow: var(--shadow-md);
         }
 
         .analyze-btn:disabled {
@@ -1320,15 +2139,17 @@ export default function Home() {
         .error-card, .loading-card {
           background: var(--bg-card);
           padding: 1.5rem;
-          border-radius: 0.5rem;
+          border-radius: var(--radius-md);
           text-align: center;
           margin: 1rem 0;
           font-size: 1.1rem;
-          border: 1px solid var(--border-soft);
+          border: 1px solid var(--border-light);
+          box-shadow: var(--shadow-md);
         }
 
         .error-card {
           color: var(--error);
+          border-left: 4px solid var(--error);
         }
 
         .loading-card .spinner {
@@ -1345,7 +2166,7 @@ export default function Home() {
 
         .tab-headers {
           display: flex;
-          border-bottom: 1px solid var(--border-soft);
+          border-bottom: 1px solid var(--border-light);
           margin-bottom: 1.5rem;
           flex-wrap: wrap;
           gap: 0.5rem;
@@ -1355,17 +2176,27 @@ export default function Home() {
           padding: 0.75rem 1.5rem;
           background: none;
           border: none;
-          color: var(--text-muted);
+          color: var(--text-secondary);
           font-size: 0.9rem;
           font-weight: 500;
           cursor: pointer;
           transition: all 0.3s;
           white-space: nowrap;
+          position: relative;
         }
 
         .tab-headers button.active {
           color: var(--accent-blue);
-          border-bottom: 2px solid var(--accent-blue);
+        }
+
+        .tab-headers button.active::after {
+          content: '';
+          position: absolute;
+          bottom: -1px;
+          left: 0;
+          width: 100%;
+          height: 2px;
+          background: var(--accent-blue);
         }
 
         .tab-content {
@@ -1373,14 +2204,59 @@ export default function Home() {
           overflow-x: hidden;
         }
 
-        .result-card {
-          background: #FFFFFF;
+        .summary-tab {
+          display: grid;
+          grid-template-columns: 2fr 1fr;
+          gap: 1.5rem;
+        }
+
+        .summary-grid {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 1.5rem;
+        }
+
+        .detailed-result-card {
+          background: var(--bg-card);
+          border-radius: var(--radius-md);
+          overflow: hidden;
+          border: 1px solid var(--border-light);
+          box-shadow: var(--shadow-sm);
+        }
+
+        [data-theme="dark"] .detailed-result-card {
+          background: var(--bg-secondary);
+        }
+
+        .card-header {
+          padding: 1rem 1.5rem;
+          background: rgba(67, 192, 246, 0.05);
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+        }
+
+        .card-icon {
+          font-size: 1.25rem;
+          color: var(--accent-blue);
+        }
+
+        .card-content {
           padding: 1.5rem;
-          border-radius: 0.75rem;
+        }
+
+        .result-card {
+          background: var(--bg-card);
+          padding: 1.5rem;
+          border-radius: var(--radius-md);
           border-left: 4px solid var(--accent-blue);
           overflow: hidden;
-          border: 1px solid var(--border-soft);
-          box-shadow: var(--shadow-subtle);
+          border: 1px solid var(--border-light);
+          box-shadow: var(--shadow-sm);
+        }
+
+        [data-theme="dark"] .result-card {
+          background: var(--bg-secondary);
         }
 
         .result-card h4 {
@@ -1392,12 +2268,19 @@ export default function Home() {
         .summary-item {
           display: flex;
           justify-content: space-between;
-          margin-bottom: 0.5rem;
-          font-size: 0.9rem;
+          margin-bottom: 0.75rem;
+          padding-bottom: 0.75rem;
+          border-bottom: 1px dashed var(--border-light);
+        }
+
+        .summary-item:last-child {
+          border-bottom: none;
+          margin-bottom: 0;
+          padding-bottom: 0;
         }
 
         .summary-item span {
-          color: var(--text-muted);
+          color: var(--text-secondary);
         }
 
         .highlight {
@@ -1411,12 +2294,12 @@ export default function Home() {
         .trend { color: var(--accent-blue); }
 
         .levels-section {
-          margin: 1rem 0;
+          margin: 1.5rem 0;
         }
 
         .levels-section h5 {
           color: var(--text-primary);
-          margin-bottom: 0.5rem;
+          margin-bottom: 0.75rem;
         }
 
         .levels-list {
@@ -1426,30 +2309,33 @@ export default function Home() {
         }
 
         .level {
-          padding: 0.5rem;
-          border-radius: 0.25rem;
+          padding: 0.75rem;
+          border-radius: var(--radius-sm);
           font-size: 0.9rem;
           word-break: break-all;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
         }
 
         .level.positive {
           border-left: 3px solid var(--success);
-          background: rgba(62, 213, 152, 0.1);
+          background: rgba(62, 213, 152, 0.05);
         }
 
         .level.negative {
           border-left: 3px solid var(--error);
-          background: rgba(239, 68, 68, 0.1);
+          background: rgba(239, 68, 68, 0.05);
         }
 
         .confidence-meter {
-          margin: 1rem 0;
+          margin: 1.5rem 0;
         }
 
         .meter-bar {
           display: flex;
-          height: 0.5rem;
-          background: var(--border-soft);
+          height: 0.75rem;
+          background: var(--bg-secondary);
           border-radius: 0.25rem;
           overflow: hidden;
         }
@@ -1461,6 +2347,7 @@ export default function Home() {
           justify-content: center;
           font-size: 0.75rem;
           color: #FFFFFF;
+          transition: width 0.5s ease;
         }
 
         .meter-fill.long { background: var(--success); }
@@ -1469,23 +2356,32 @@ export default function Home() {
         .patterns-list {
           display: flex;
           flex-direction: column;
-          gap: 0.5rem;
+          gap: 0.75rem;
         }
 
         .patterns-list div {
-          padding: 0.5rem;
-          background: var(--bg-card);
-          border-radius: 0.25rem;
+          padding: 0.75rem;
+          background: var(--bg-secondary);
+          border-radius: var(--radius-sm);
           font-size: 0.9rem;
           word-break: break-word;
         }
 
         .action-recommend {
           text-align: center;
-          padding: 1rem;
+          padding: 1.5rem;
           background: rgba(67, 192, 246, 0.1);
-          border-radius: 0.5rem;
-          font-size: 1rem;
+          border-radius: var(--radius-md);
+          font-size: 1.25rem;
+          margin-bottom: 1.5rem;
+        }
+
+        .action-details {
+          padding: 1rem;
+          background: var(--bg-secondary);
+          border-radius: var(--radius-md);
+          font-size: 0.95rem;
+          line-height: 1.6;
         }
 
         .action-ctas {
@@ -1499,11 +2395,14 @@ export default function Home() {
         .cta-btn {
           padding: 0.75rem 1.5rem;
           border: none;
-          border-radius: 0.5rem;
+          border-radius: var(--radius-md);
           font-size: 0.9rem;
           font-weight: 600;
           cursor: pointer;
           transition: all 0.3s;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
         }
 
         .cta-btn.primary {
@@ -1512,14 +2411,77 @@ export default function Home() {
         }
 
         .cta-btn.secondary {
-          background: #FFFFFF;
+          background: var(--bg-card);
           color: var(--text-primary);
-          border: 1px solid var(--border-soft);
+          border: 1px solid var(--border-light);
+        }
+
+        [data-theme="dark"] .cta-btn.secondary {
+          background: var(--bg-secondary);
         }
 
         .cta-btn:hover {
           transform: translateY(-2px);
-          box-shadow: var(--shadow-hover);
+          box-shadow: var(--shadow-md);
+        }
+
+        .risk-assessment {
+          display: flex;
+          justify-content: space-around;
+          flex-wrap: wrap;
+          gap: 1rem;
+        }
+
+        .risk-gauge {
+          text-align: center;
+          flex: 1;
+          min-width: 100px;
+        }
+
+        .gauge-container {
+          width: 100px;
+          height: 100px;
+          margin: 0 auto 0.5rem;
+        }
+
+        .circular-chart {
+          display: block;
+          margin: 10px auto;
+          max-width: 80%;
+          max-height: 250px;
+        }
+
+        .circle-bg {
+          fill: none;
+          stroke: var(--border-light);
+          stroke-width: 3.8;
+        }
+
+        .circle {
+          fill: none;
+          stroke-width: 2.8;
+          stroke-linecap: round;
+          animation: progress 1s ease-out forwards;
+        }
+
+        @keyframes progress {
+          0% { stroke-dasharray: 0 100; }
+        }
+
+        .low-risk { stroke: var(--success); }
+        .medium-risk { stroke: var(--warning); }
+        .high-risk { stroke: var(--error); }
+
+        .percentage {
+          fill: var(--text-primary);
+          font-size: 0.5em;
+          text-anchor: middle;
+        }
+
+        .gauge-label {
+          display: block;
+          font-size: 0.85rem;
+          color: var(--text-secondary);
         }
 
         .section-grid {
@@ -1541,19 +2503,37 @@ export default function Home() {
           gap: 2rem;
         }
 
-        .step-card, .feature-card {
+        .step-card, .feature-card, .feature-highlight {
           padding: 2rem;
           background: var(--bg-card);
-          border-radius: 1rem;
+          border-radius: var(--radius-lg);
           transition: transform 0.3s;
           cursor: pointer;
-          box-shadow: var(--shadow-subtle);
-          border: 1px solid var(--border-soft);
+          box-shadow: var(--shadow-md);
+          border: 1px solid var(--border-light);
+          position: relative;
+          overflow: hidden;
         }
 
-        .step-card:hover, .feature-card:hover {
+        [data-theme="dark"] .step-card, 
+        [data-theme="dark"] .feature-card, 
+        [data-theme="dark"] .feature-highlight {
+          background: var(--bg-secondary);
+        }
+
+        .step-card:hover, .feature-card:hover, .feature-highlight:hover {
           transform: translateY(-5px);
-          box-shadow: var(--shadow-hover);
+          box-shadow: var(--shadow-lg);
+        }
+
+        .step-card::before, .feature-card::before, .feature-highlight::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 4px;
+          background: var(--button-gradient);
         }
 
         .step-icon, .feature-icon {
@@ -1562,16 +2542,226 @@ export default function Home() {
           color: var(--accent-blue);
         }
 
-        .testimonials-section, .faq-section, .premium-section, .security-section, .integrations-section, .roadmap-section {
+        .market-analysis-section {
           padding: 4rem 2rem;
+          background: var(--bg-secondary);
+        }
+
+        [data-theme="dark"] .market-analysis-section {
+          background: var(--bg-primary);
+        }
+
+        .section-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 2rem;
+          max-width: 1200px;
+          margin: 0 auto 2rem;
+          padding: 0 1rem;
+        }
+
+        .section-header h2 {
+          font-size: 2rem;
+          font-weight: 600;
+        }
+
+        .refresh-indicator {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          color: var(--text-secondary);
+          font-size: 0.9rem;
+        }
+
+        .bolt-icon {
+          color: var(--accent-blue);
+        }
+
+        .market-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+          gap: 1.5rem;
+          max-width: 1200px;
+          margin: 0 auto;
+          padding: 0 1rem;
+        }
+
+        .market-data-card, .fear-greed-card, .top-volume-card, .dominance-card, .price-trend-card {
           background: var(--bg-card);
+          border-radius: var(--radius-lg);
+          padding: 1.5rem;
+          box-shadow: var(--shadow-md);
+          border: 1px solid var(--border-light);
+        }
+
+        [data-theme="dark"] .market-data-card, 
+        [data-theme="dark"] .fear-greed-card, 
+        [data-theme="dark"] .top-volume-card, 
+        [data-theme="dark"] .dominance-card,
+        [data-theme="dark"] .price-trend-card {
+          background: var(--bg-secondary);
+        }
+
+        .market-card-header, .fear-greed-header, .top-volume-header, .dominance-header, .price-trend-header {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          margin-bottom: 1rem;
+        }
+
+        .market-icon, .fire-icon, .volume-icon, .percent-icon, .trend-icon {
+          font-size: 1.25rem;
+          color: var(--accent-blue);
+        }
+
+        .market-card-header h4, .fear-greed-header h3, .top-volume-header h3, .dominance-header h3, .price-trend-header h3 {
+          flex: 1;
+          font-size: 1.1rem;
+          font-weight: 600;
+        }
+
+        .live-badge {
+          background: var(--accent-blue);
+          color: white;
+          padding: 0.25rem 0.5rem;
+          border-radius: var(--radius-sm);
+          font-size: 0.7rem;
+          font-weight: 600;
+        }
+
+        .market-card-content {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        .market-value {
+          font-size: 1.5rem;
+          font-weight: 700;
+        }
+
+        .market-change {
+          display: flex;
+          align-items: center;
+          gap: 0.25rem;
+          font-weight: 600;
+        }
+
+        .market-change.positive {
+          color: var(--success);
+        }
+
+        .market-change.negative {
+          color: var(--error);
+        }
+
+        .fear-greed-content {
+          text-align: center;
+        }
+
+        .fear-greed-value {
+          font-size: 3rem;
+          font-weight: 700;
+          margin: 0.5rem 0;
+        }
+
+        .fear-greed-status {
+          font-size: 1.25rem;
+          font-weight: 600;
+          margin-bottom: 1rem;
+        }
+
+        .extreme-greed { color: var(--success); }
+        .greed { color: #93C5FD; }
+        .neutral { color: var(--warning); }
+        .fear { color: #F87171; }
+        .extreme-fear { color: var(--error); }
+
+        .fear-greed-bar {
+          height: 1rem;
+          background: var(--bg-secondary);
+          border-radius: var(--radius-sm);
+          overflow: hidden;
+          margin-bottom: 0.5rem;
+        }
+
+        .fear-greed-fill {
+          height: 100%;
+          transition: width 0.5s ease;
+        }
+
+        .fear-greed-scale {
+          display: flex;
+          justify-content: space-between;
+          font-size: 0.8rem;
+          color: var(--text-secondary);
+        }
+
+        .top-volume-list, .dominance-list, .price-trend-list {
+          display: flex;
+          flex-direction: column;
+          gap: 0.75rem;
+        }
+
+        .volume-item, .dominance-item, .trend-item {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 0.75rem;
+          background: var(--bg-secondary);
+          border-radius: var(--radius-sm);
+        }
+
+        [data-theme="dark"] .volume-item, 
+        [data-theme="dark"] .dominance-item,
+        [data-theme="dark"] .trend-item {
+          background: var(--bg-card);
+        }
+
+        .coin-rank {
+          font-weight: 600;
+          color: var(--accent-blue);
+          width: 30px;
+        }
+
+        .coin-name {
+          font-weight: 600;
+        }
+
+        .coin-volume, .coin-dominance {
+          font-weight: 600;
+        }
+
+        .dominance-content {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 1rem;
+        }
+
+        .dominance-section h4 {
+          margin-bottom: 0.5rem;
+          color: var(--text-primary);
+        }
+
+        .testimonials-section, .faq-section, .security-section, .integrations-section, .roadmap-section {
+          padding: 4rem 2rem;
+          background: var(--bg-secondary);
+        }
+
+        [data-theme="dark"] .testimonials-section, 
+        [data-theme="dark"] .faq-section, 
+        [data-theme="dark"] .security-section, 
+        [data-theme="dark"] .integrations-section, 
+        [data-theme="dark"] .roadmap-section {
+          background: var(--bg-primary);
         }
 
         .carousel {
           display: flex;
-          gap: 1rem;
+          gap: 1.5rem;
           overflow-x: auto;
-          padding-bottom: 1rem;
+          padding: 1rem 0;
           scroll-snap-type: x mandatory;
         }
 
@@ -1579,11 +2769,15 @@ export default function Home() {
           min-width: 300px;
           padding: 1.5rem;
           background: var(--bg-card);
-          border-radius: 1rem;
+          border-radius: var(--radius-lg);
           flex-shrink: 0;
           scroll-snap-align: center;
-          box-shadow: var(--shadow-subtle);
-          border: 1px solid var(--border-soft);
+          box-shadow: var(--shadow-md);
+          border: 1px solid var(--border-light);
+        }
+
+        [data-theme="dark"] .testimonial-card {
+          background: var(--bg-secondary);
         }
 
         .testimonial-card cite {
@@ -1597,13 +2791,14 @@ export default function Home() {
 
         .stat {
           margin-top: 2rem;
-          color: var(--text-muted);
+          color: var(--text-secondary);
           font-size: 1rem;
+          text-align: center;
         }
 
         .faq-item {
           margin-bottom: 1rem;
-          border-bottom: 1px solid var(--border-soft);
+          border-bottom: 1px solid var(--border-light);
         }
 
         .faq-question {
@@ -1632,7 +2827,7 @@ export default function Home() {
 
         .faq-answer {
           padding: 0 0 1rem 1rem;
-          color: var(--text-muted);
+          color: var(--text-secondary);
           font-size: 0.9rem;
           animation: fadeIn 0.3s;
         }
@@ -1642,7 +2837,7 @@ export default function Home() {
           justify-content: center;
           gap: 2rem;
           flex-wrap: wrap;
-          color: var(--text-muted);
+          color: var(--text-secondary);
           font-size: 1rem;
         }
 
@@ -1657,23 +2852,34 @@ export default function Home() {
           padding: 0.75rem;
           background: var(--bg-card);
           margin-bottom: 0.5rem;
-          border-radius: 0.5rem;
+          border-radius: var(--radius-sm);
           font-size: 0.9rem;
-          box-shadow: var(--shadow-subtle);
-          border: 1px solid var(--border-soft);
+          box-shadow: var(--shadow-sm);
+          border: 1px solid var(--border-light);
+          display: flex;
+          align-items: center;
+        }
+
+        [data-theme="dark"] .roadmap-list li {
+          background: var(--bg-secondary);
         }
 
         .roadmap-list li:before {
           content: '→';
           color: var(--accent-blue);
           margin-right: 0.5rem;
+          font-weight: bold;
         }
 
         .footer {
           padding: 3rem 2rem;
-          background: var(--bg-primary);
-          border-top: 1px solid var(--border-soft);
+          background: var(--bg-card);
+          border-top: 1px solid var(--border-light);
           text-align: center;
+        }
+
+        [data-theme="dark"] .footer {
+          background: var(--bg-secondary);
         }
 
         .footer-content {
@@ -1702,7 +2908,7 @@ export default function Home() {
         }
 
         .footer-links a {
-          color: var(--text-muted);
+          color: var(--text-secondary);
           text-decoration: none;
           font-size: 0.9rem;
         }
@@ -1715,6 +2921,15 @@ export default function Home() {
           color: var(--error);
           font-size: 0.85rem;
           margin-top: 1rem;
+        }
+
+        .loading-page {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          height: 100vh;
+          font-size: 1.5rem;
+          color: var(--accent-blue);
         }
 
         @media (max-width: 768px) {
@@ -1761,7 +2976,7 @@ export default function Home() {
           .wizard, .result-tabs, .history-section, .premium-section {
             padding: 1.5rem;
             margin: 0 0.5rem;
-            border-radius: 0.75rem;
+            border-radius: var(--radius-md);
           }
           .tab-headers {
             flex-direction: column;
@@ -1771,7 +2986,7 @@ export default function Home() {
             border-bottom: none;
             padding: 1rem;
             text-align: left;
-            border-bottom: 1px solid var(--border-soft);
+            border-bottom: 1px solid var(--border-light);
           }
           .tab-headers button.active {
             border-bottom: 1px solid var(--accent-blue);
@@ -1794,6 +3009,26 @@ export default function Home() {
           .history-pl {
             justify-content: flex-start;
           }
+          .summary-tab {
+            grid-template-columns: 1fr;
+          }
+          .hero-stats {
+            grid-template-columns: 1fr;
+          }
+          .market-grid {
+            grid-template-columns: 1fr;
+          }
+          .section-header {
+            flex-direction: column;
+            gap: 1rem;
+            align-items: flex-start;
+          }
+          .plan-toggle {
+            width: 100%;
+          }
+          .dominance-content {
+            grid-template-columns: 1fr;
+          }
         }
 
         @media (max-width: 480px) {
@@ -1806,6 +3041,16 @@ export default function Home() {
           }
           .result-card, .history-card {
             padding: 1rem;
+          }
+          .mission-stats {
+            flex-direction: column;
+            gap: 1rem;
+          }
+          .pricing-card {
+            padding: 1.5rem;
+          }
+          .price {
+            font-size: 2rem;
           }
         }
       `}</style>
