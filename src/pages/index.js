@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import Head from "next/head";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { FaUserCircle, FaBars, FaMoon, FaSun, FaChartLine, FaRobot, FaCog, FaHistory, FaBolt, FaFire, FaChartBar, FaTrophy, FaShareAlt, FaArrowUp, FaArrowDown, FaExchangeAlt, FaPercentage, FaClock, FaUsers } from "react-icons/fa";
+import { FaUserCircle, FaBars, FaMoon, FaSun, FaChartLine, FaRobot, FaCog, FaHistory, FaBolt, FaFire, FaChartBar, FaTrophy, FaShareAlt, FaArrowUp, FaArrowDown, FaExchangeAlt, FaPercentage, FaClock, FaUsers, FaSearch, FaStar, FaInfoCircle, FaDownload, FaBell, FaLock, FaCheck, FaTimes } from "react-icons/fa";
 import { useAuth } from "/contexts/AuthContext";
 import ProfileModal from "/components/ProfileModal";
 import LoginPopup from "/components/LoginPopup";
@@ -407,6 +407,38 @@ const InputWizard = ({
   );
 };
 
+// Pattern Mini Chart Component
+const PatternMiniChart = ({ patternCoords, currentPrice }) => {
+  if (!patternCoords) return null;
+  
+  return (
+    <div className="pattern-mini-chart">
+      <h4>Pattern Visualization</h4>
+      {Object.entries(patternCoords).map(([patternName, coords]) => (
+        <div key={patternName} className="pattern-chart-item">
+          <div className="pattern-header">
+            <strong>{patternName}</strong>
+            <span className="pattern-score">Score: {coords.score}</span>
+          </div>
+          <div className="pattern-details">
+            <span className="pattern-type">Type: {coords.type}</span>
+            {coords.prices && (
+              <div className="pattern-prices">
+                Prices: {coords.prices.map(p => `$${p.toFixed(2)}`).join(' → ')}
+              </div>
+            )}
+            {coords.bars && (
+              <div className="pattern-bars">
+                Bars: {coords.bars.join(', ')}
+              </div>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
 // Detailed Result Card Component
 const DetailedResultCard = ({ title, children, icon }) => (
   <div className="detailed-result-card">
@@ -447,6 +479,10 @@ const RiskGauge = ({ value, label }) => (
 const ResultTabs = ({ result }) => {
   const [activeTab, setActiveTab] = useState("summary");
 
+  // Calculate risk score based on position confidence
+  const riskScore = result?.position_confidence ? 
+    parseInt(result.position_confidence.replace('%', '')) : 45;
+
   return (
     <AnimatedCard className="result-tabs">
       <div className="tab-headers" role="tablist">
@@ -475,12 +511,12 @@ const ResultTabs = ({ result }) => {
           Market Sentiment
         </button>
         <button
-          className={activeTab === "chart-patterns" ? "active" : ""}
-          onClick={() => setActiveTab("chart-patterns")}
+          className={activeTab === "patterns" ? "active" : ""}
+          onClick={() => setActiveTab("patterns")}
           role="tab"
-          aria-selected={activeTab === "chart-patterns"}
+          aria-selected={activeTab === "patterns"}
         >
-          Detected Chart Patterns
+          Detected Patterns
         </button>
         <button
           className={activeTab === "action" ? "active" : ""}
@@ -498,47 +534,46 @@ const ResultTabs = ({ result }) => {
               <DetailedResultCard title="Trade Overview" icon={<FaChartLine />}>
                 <div className="summary-item">
                   <span>Asset:</span>{" "}
-                  <strong>{result?.coin || "N/A"} ({result?.asset_class?.toUpperCase() || "N/A"})</strong>
-                </div>
-                <div className="summary-item">
-                  <span>Market:</span> <strong>{result?.market?.toUpperCase() || "N/A"}</strong>
+                  <strong>{result?.trade_summary?.coin || "N/A"} ({result?.trade_summary?.market?.toUpperCase() || "N/A"})</strong>
                 </div>
                 <div className="summary-item">
                   <span>Position:</span>{" "}
                   <strong
-                    className={result?.position_type === "long" ? "positive" : "negative"}
+                    className={result?.trade_summary?.position_type === "long" ? "positive" : "negative"}
                   >
-                    {result?.position_type?.toUpperCase() || "N/A"}
+                    {result?.trade_summary?.position_type?.toUpperCase() || "N/A"}
                   </strong>
                 </div>
                 <div className="summary-item">
                   <span>Entry Price:</span>{" "}
                   <strong className="highlight">
-                    ${result?.entry_price?.toFixed(5) || "N/A"}
+                    ${result?.trade_summary?.entry_price?.toFixed(2) || "N/A"}
                   </strong>
                 </div>
                 <div className="summary-item">
                   <span>Live Price:</span>{" "}
                   <strong className="highlight">
-                    ${result?.current_price?.toFixed(5) || "N/A"}
+                    ${result?.trade_summary?.current_price?.toFixed(2) || "N/A"}
                   </strong>
                 </div>
                 <div className="summary-item">
                   <span>P/L:</span>{" "}
-                  <strong className={result?.profit_loss >= 0 ? "positive" : "negative"}>
-                    {result?.profit_loss || "N/A"}
+                  <strong className={parseFloat(result?.trade_summary?.profit_loss?.split(' ')[0] || 0) >= 0 ? "positive" : "negative"}>
+                    {result?.trade_summary?.profit_loss || "N/A"}
                   </strong>
                 </div>
-                <div className="summary-item">
-                  <span>Status:</span> <em>{result?.profitability_comment || "No Data"}</em>
-                </div>
+                {result?.warning && (
+                  <div className="summary-item">
+                    <span>Warning:</span> <em className="warning-text">{result.warning}</em>
+                  </div>
+                )}
               </DetailedResultCard>
               
               <DetailedResultCard title="Risk Assessment" icon={<FaCog />}>
                 <div className="risk-assessment">
-                  <RiskGauge value={result?.risk_score || 45} label="Overall Risk" />
-                  <RiskGauge value={result?.volatility_score || 65} label="Volatility" />
-                  <RiskGauge value={result?.sentiment_score || 78} label="Sentiment" />
+                  <RiskGauge value={riskScore} label="Position Confidence" />
+                  <RiskGauge value={result?.market_confidence?.bullish || 50} label="Bullish Confidence" />
+                  <RiskGauge value={result?.market_confidence?.bearish || 50} label="Bearish Confidence" />
                 </div>
               </DetailedResultCard>
             </div>
@@ -551,26 +586,31 @@ const ResultTabs = ({ result }) => {
               <div className="levels-section">
                 <h5>Take Profit Targets</h5>
                 <div className="levels-list">
-                  {(result?.targets || []).map((target, idx) => (
-                    <div key={idx} className="level positive">
-                      T{idx + 1}: ${target?.toFixed(5) || "N/A"}
+                  {result?.targets_and_stoplosses?.tgt1 && (
+                    <div className="level positive">
+                      TGT1: ${parseFloat(result.targets_and_stoplosses.tgt1).toFixed(2)}
                     </div>
-                  ))}
+                  )}
+                  {result?.targets_and_stoplosses?.tgt2 && (
+                    <div className="level positive">
+                      TGT2: ${parseFloat(result.targets_and_stoplosses.tgt2).toFixed(2)}
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="levels-section">
                 <h5>Stop Loss Levels</h5>
                 <div className="levels-list">
-                  {result?.user_stoploss && (
+                  {result?.targets_and_stoplosses?.user_sl && (
                     <div className="level negative">
-                      User SL: ${result.user_stoploss?.toFixed(5) || "N/A"}
+                      User SL: ${parseFloat(result.targets_and_stoplosses.user_sl).toFixed(2)}
                     </div>
                   )}
-                  {(result?.market_stoplosses || []).map((sl, idx) => (
-                    <div key={idx} className="level negative">
-                      SL{idx + 1}: ${sl?.toFixed(5) || "N/A"}
+                  {result?.targets_and_stoplosses?.market_sl && (
+                    <div className="level negative">
+                      Market SL: ${parseFloat(result.targets_and_stoplosses.market_sl).toFixed(2)}
                     </div>
-                  ))}
+                  )}
                 </div>
               </div>
             </div>
@@ -581,45 +621,68 @@ const ResultTabs = ({ result }) => {
             <div className="result-card">
               <h4>Market Sentiment</h4>
               <div className="summary-item">
-                <span>Overall Trend:</span>{" "}
-                <strong className="trend">{result?.market_trend?.toUpperCase() || "N/A"}</strong>
+                <span>Sentiment:</span>{" "}
+                <strong className={result?.sentiment?.toLowerCase().includes('bullish') ? "positive" : result?.sentiment?.toLowerCase().includes('bearish') ? "negative" : ""}>
+                  {result?.sentiment?.toUpperCase() || "N/A"}
+                </strong>
               </div>
               <div className="confidence-meter">
                 <div className="meter-bar">
                   <div
                     className="meter-fill long"
-                    style={{ width: `${result?.confidence_meter?.long || 0}%` }}
+                    style={{ width: `${result?.market_confidence?.bullish || 0}%` }}
                   >
-                    Long: {result?.confidence_meter?.long || 0}%
+                    Bullish: {result?.market_confidence?.bullish || 0}%
                   </div>
                   <div
                     className="meter-fill short"
-                    style={{ width: `${result?.confidence_meter?.short || 0}%` }}
+                    style={{ width: `${result?.market_confidence?.bearish || 0}%` }}
                   >
-                    Short: {result?.confidence_meter?.short || 0}%
+                    Bearish: {result?.market_confidence?.bearish || 0}%
                   </div>
                 </div>
               </div>
-              <div className="summary-item">
-                <em>{result?.trend_comment || "No Comment"}</em>
-              </div>
+              {result?.enhanced_sentiment && (
+                <div className="sentiment-details">
+                  <div className="summary-item">
+                    <span>Market Bias:</span> <strong>{result.enhanced_sentiment['Market Bias']}</strong>
+                  </div>
+                  <div className="summary-item">
+                    <span>Strength:</span> <strong>{result.enhanced_sentiment['Strength']}</strong>
+                  </div>
+                  <div className="summary-item">
+                    <span>Trend:</span> <strong>{result.enhanced_sentiment['Short-Term Trend']}</strong>
+                  </div>
+                  <div className="summary-item">
+                    <span>Volume:</span> <strong>{result.enhanced_sentiment['Volume Status']}</strong>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
-        {activeTab === "chart-patterns" && (
+        {activeTab === "patterns" && (
           <div className="tab-panel">
             <div className="result-card">
-              <h4>Detected Chart Patterns</h4>
-              <div className="patterns-list">
-                <div>
-                  Candlesticks:{" "}
-                  {(result?.detected_patterns?.candlesticks || []).join(", ") || "None Detected"}
+              <h4>Detected Patterns</h4>
+              {result?.patterns && result.patterns.length > 0 ? (
+                <div className="patterns-list">
+                  {result.patterns.map((pattern, index) => (
+                    <div key={index} className="pattern-tag">
+                      {pattern}
+                    </div>
+                  ))}
                 </div>
-                <div>
-                  Chart Patterns:{" "}
-                  {(result?.detected_patterns?.chart_patterns || []).join(", ") || "None Detected"}
-                </div>
-              </div>
+              ) : (
+                <p>No patterns detected</p>
+              )}
+              
+              {result?.pattern_coords && (
+                <PatternMiniChart 
+                  patternCoords={result.pattern_coords}
+                  currentPrice={result.trade_summary?.current_price}
+                />
+              )}
             </div>
           </div>
         )}
@@ -628,12 +691,15 @@ const ResultTabs = ({ result }) => {
             <div className="result-card">
               <h4>Recommended Action</h4>
               <div className="action-recommend">
-                <strong className="trend">
-                  {result?.recommended_action?.toUpperCase() || "HOLD"}
+                <strong className={result?.sentiment?.toLowerCase().includes('bullish') ? "positive" : result?.sentiment?.toLowerCase().includes('bearish') ? "negative" : ""}>
+                  {result?.sentiment?.toUpperCase() || "HOLD"}
                 </strong>
               </div>
               <div className="action-details">
-                <p>{result?.action_reasoning || "No reasoning provided"}</p>
+                <p>{result?.warning || "No specific action recommended"}</p>
+                {result?.enhanced_sentiment?.Note && (
+                  <p><em>{result.enhanced_sentiment.Note}</em></p>
+                )}
               </div>
             </div>
           </div>
@@ -2289,9 +2355,12 @@ export default function Home() {
           word-break: break-all;
         }
 
+        .warning-text {
+          color: var(--warning);
+        }
+
         .positive { color: var(--success); }
         .negative { color: var(--error); }
-        .trend { color: var(--accent-blue); }
 
         .levels-section {
           margin: 1.5rem 0;
@@ -2355,16 +2424,64 @@ export default function Home() {
 
         .patterns-list {
           display: flex;
-          flex-direction: column;
-          gap: 0.75rem;
+          flex-wrap: wrap;
+          gap: 0.5rem;
+          margin-bottom: 1rem;
         }
 
-        .patterns-list div {
-          padding: 0.75rem;
+        .pattern-tag {
           background: var(--bg-secondary);
+          padding: 0.5rem 0.75rem;
           border-radius: var(--radius-sm);
-          font-size: 0.9rem;
-          word-break: break-word;
+          font-size: 0.85rem;
+          font-weight: 500;
+        }
+
+        [data-theme="dark"] .pattern-tag {
+          background: var(--bg-card);
+        }
+
+        .pattern-mini-chart {
+          margin-top: 1.5rem;
+          padding-top: 1rem;
+          border-top: 1px solid var(--border-light);
+        }
+
+        .pattern-mini-chart h4 {
+          margin-bottom: 1rem;
+          color: var(--text-primary);
+        }
+
+        .pattern-chart-item {
+          background: var(--bg-secondary);
+          padding: 1rem;
+          border-radius: var(--radius-sm);
+          margin-bottom: 0.75rem;
+        }
+
+        [data-theme="dark"] .pattern-chart-item {
+          background: var(--bg-card);
+        }
+
+        .pattern-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 0.5rem;
+        }
+
+        .pattern-score {
+          font-size: 0.8rem;
+          color: var(--text-secondary);
+        }
+
+        .pattern-details {
+          font-size: 0.85rem;
+          color: var(--text-secondary);
+        }
+
+        .pattern-type, .pattern-prices, .pattern-bars {
+          margin: 0.25rem 0;
         }
 
         .action-recommend {
@@ -2382,6 +2499,10 @@ export default function Home() {
           border-radius: var(--radius-md);
           font-size: 0.95rem;
           line-height: 1.6;
+        }
+
+        [data-theme="dark"] .action-details {
+          background: var(--bg-card);
         }
 
         .action-ctas {
@@ -2482,6 +2603,12 @@ export default function Home() {
           display: block;
           font-size: 0.85rem;
           color: var(--text-secondary);
+        }
+
+        .sentiment-details {
+          margin-top: 1rem;
+          padding-top: 1rem;
+          border-top: 1px solid var(--border-light);
         }
 
         .section-grid {
