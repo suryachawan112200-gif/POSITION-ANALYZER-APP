@@ -1,11 +1,14 @@
 import { useState, useRef, useEffect } from "react";
 import Head from "next/head";
 import Link from "next/link";
+import { useRouter } from "next/router";
 import dynamic from "next/dynamic";
-import { FaUserCircle, FaBars, FaMoon, FaSun, FaChartLine, FaRobot, FaCog, FaHistory, FaBolt, FaFire, FaChartBar, FaTrophy, FaShareAlt, FaArrowUp, FaArrowDown, FaExchangeAlt, FaPercentage, FaClock, FaUsers, FaSearch, FaStar, FaInfoCircle, FaDownload, FaBell, FaLock, FaCheck, FaTimes } from "react-icons/fa";
+import { motion } from "framer-motion";
+import { FaUserCircle, FaBars, FaMoon, FaSun, FaChartLine, FaRobot, FaCog, FaHistory, FaBolt, FaFire, FaChartBar, FaTrophy, FaShareAlt, FaArrowUp, FaArrowDown, FaExchangeAlt, FaPercentage, FaClock, FaUsers, FaSearch, FaStar, FaInfoCircle, FaDownload, FaBell, FaLock, FaCheck, FaTimes, FaArrowRight, FaRedoAlt } from "react-icons/fa";
 import { useAuth } from "/contexts/AuthContext";
 import ProfileModal from "/components/ProfileModal";
 import LoginPopup from "/components/LoginPopup";
+import useSWR from 'swr';
 
 // Enhanced Logo font style with redesign
 const logoFont = {
@@ -29,13 +32,206 @@ const ThemeToggle = ({ theme, toggleTheme }) => (
 
 // Animated Card Component
 const AnimatedCard = ({ children, className = "", delay = 0 }) => (
-  <div 
+  <motion.div 
     className={`animated-card ${className}`}
-    style={{ animationDelay: `${delay}s` }}
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    transition={{ delay }}
   >
     {children}
-  </div>
+  </motion.div>
 );
+
+// Use environment variable for backend URL
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+
+// SWR fetcher function
+const fetcher = async (url) => {
+  const res = await fetch(`${BACKEND_URL}${url}`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+};
+
+// Enhanced Pattern Highlight Box
+const PatternHighlightBox = ({ patterns, loading }) => {
+  const router = useRouter();
+  const [lastUpdated, setLastUpdated] = useState(new Date());
+  
+  const refreshPatterns = () => {
+    setLastUpdated(new Date());
+  };
+  
+  const navigateToPatterns = () => {
+    router.push('/patterns');
+  };
+  
+  const topPatterns = patterns?.patterns?.slice(0, 2) || [];
+  
+  return (
+    <motion.div 
+      className="highlight-box pattern-box"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+    >
+      <div className="highlight-header">
+        <div className="header-left">
+          <div className="header-icon">🔥</div>
+          <h3>Top Patterns Detected</h3>
+        </div>
+        <div className="header-right">
+          <div className="updated-badge">
+            <FaClock /> Last Updated: {lastUpdated.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+          </div>
+          <button className="refresh-btn" onClick={refreshPatterns} aria-label="Refresh data">
+            <FaRedoAlt />
+          </button>
+        </div>
+      </div>
+      
+      <div className="highlight-content">
+        {loading ? (
+          <div className="loading-indicator">Loading latest patterns...</div>
+        ) : topPatterns.length > 0 ? (
+          <div className="pattern-items">
+            {topPatterns.map((pattern, index) => (
+              <div key={index} className="pattern-item">
+                <div className="pattern-title">
+                  {pattern.symbol || "ETHUSDT"}: {pattern.pattern || "Rectangle"} ({pattern.bias || "Bullish"})
+                </div>
+                <div className="pattern-details">
+                  <div className="probability">Prob: <span className="premium-value">{pattern.probability || "82"}%</span></div>
+                  <div className="target">TGT: <span className="premium-blur">$3,300</span></div>
+                  <div className="stoploss">SL: <span className="premium-blur">$3,150</span></div>
+                  <div className="timestamp">Updated: {pattern.timestamp || lastUpdated.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="empty-state">No significant patterns detected</div>
+        )}
+        
+        <div className="premium-badge">
+          <FaLock /> Premium: Unlock 10+ Daily
+        </div>
+        
+        <button className="view-full-btn" onClick={navigateToPatterns}>
+          View All Patterns <FaArrowRight />
+        </button>
+      </div>
+    </motion.div>
+  );
+};
+
+// Enhanced Bias Highlight Box
+const BiasHighlightBox = ({ biases, loading }) => {
+  const router = useRouter();
+  const [lastUpdated, setLastUpdated] = useState(new Date());
+  
+  const refreshBiases = () => {
+    setLastUpdated(new Date());
+  };
+  
+  const navigateToBias = () => {
+    router.push('/bias');
+  };
+  
+  const topBiases = biases?.biases?.slice(0, 2) || [];
+  
+  return (
+    <motion.div 
+      className="highlight-box bias-box"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5, delay: 0.2 }}
+    >
+      <div className="highlight-header">
+        <div className="header-left">
+          <div className="header-icon">📈</div>
+          <h3>Strong Bias Moves</h3>
+        </div>
+        <div className="header-right">
+          <div className="updated-badge">
+            <FaClock /> Last Updated: {lastUpdated.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+          </div>
+          <button className="refresh-btn" onClick={refreshBiases} aria-label="Refresh data">
+            <FaRedoAlt />
+          </button>
+        </div>
+      </div>
+      
+      <div className="highlight-content">
+        {loading ? (
+          <div className="loading-indicator">Loading latest bias data...</div>
+        ) : topBiases.length > 0 ? (
+          <div className="bias-items">
+            {topBiases.map((bias, index) => (
+              <div key={index} className="bias-item">
+                <div className="bias-title">
+                  {bias.symbol || "SOLUSDT"}: Strong {bias.bias || "Bullish"} ({bias.strength || "85"}%)
+                </div>
+                <div className="bias-details">
+                  <div className="movement">24h Move: <span className={bias.move > 0 ? "positive" : "negative"}>{bias.move || "+2.3"}%</span></div>
+                  <div className="expected">Expected: <span className="premium-blur">{bias.expected || "+3.5"}%</span></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="empty-state">No strong bias detected</div>
+        )}
+        
+        <div className="premium-badge">
+          <FaLock /> Premium: Unlock Full Analysis
+        </div>
+        
+        <button className="view-full-btn" onClick={navigateToBias}>
+          View All Bias Data <FaArrowRight />
+        </button>
+      </div>
+    </motion.div>
+  );
+};
+
+// History Panel Component
+const HistoryPanel = () => {
+  const [history, setHistory] = useState([]);
+  
+  useEffect(() => {
+    try {
+      const savedHistory = localStorage.getItem("aivisorHistory");
+      if (savedHistory) {
+        const parsed = JSON.parse(savedHistory);
+        setHistory(parsed.slice(0, 3));
+      }
+    } catch (err) {
+      console.error("Error loading history:", err);
+    }
+  }, []);
+  
+  if (history.length === 0) return null;
+  
+  return (
+    <details className="history-panel">
+      <summary className="history-header">
+        <FaHistory /> Recent Updates
+      </summary>
+      <div className="history-content">
+        {history.map((item, index) => (
+          <div key={index} className="history-item">
+            <div className="history-time">
+              {new Date(item.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+            </div>
+            <div className="history-description">
+              {item.result?.trade_summary?.coin || "BTC"} - {item.result?.patterns?.[0] || "Pattern"} | Prob {item.result?.position_confidence || "78"}%
+            </div>
+          </div>
+        ))}
+      </div>
+    </details>
+  );
+};
 
 // Statistic Card Component
 const StatCard = ({ title, value, icon, trend }) => (
@@ -175,7 +371,7 @@ const PriceTrend = ({ coins }) => (
   </div>
 );
 
-// Hero Component with Live Ticker
+// Hero Component with Live Ticker and Enhanced Background
 const Hero = ({ scrollToDashboard, tickerData, theme, stats }) => (
   <div className="hero">
     <div className="ticker">
@@ -200,18 +396,37 @@ const Hero = ({ scrollToDashboard, tickerData, theme, stats }) => (
         <StatCard title="Accuracy Rate" value={`${stats.accuracyRate}%`} icon={<FaRobot />} trend={2.4} />
       </div>
     </div>
-    <div className="floating-elements">
-      {[...Array(5)].map((_, i) => (
-        <div 
-          key={i} 
-          className="floating-element"
-          style={{
-            left: `${15 + i * 15}%`,
-            animationDelay: `${i * 0.5}s`,
-            backgroundColor: theme === 'dark' ? 'rgba(75, 155, 255, 0.1)' : 'rgba(75, 155, 255, 0.05)'
-          }}
-        />
-      ))}
+    
+    {/* Enhanced background elements */}
+    <div className="bg-elements">
+      <div className="grid-lines"></div>
+      <div className="particles">
+        {[...Array(20)].map((_, i) => (
+          <div 
+            key={i} 
+            className="particle"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              animationDelay: `${Math.random() * 5}s`,
+              animationDuration: `${5 + Math.random() * 10}s`
+            }}
+          />
+        ))}
+      </div>
+      <div className="floating-elements">
+        {[...Array(5)].map((_, i) => (
+          <div 
+            key={i} 
+            className="floating-element"
+            style={{
+              left: `${15 + i * 15}%`,
+              animationDelay: `${i * 0.5}s`,
+              backgroundColor: theme === 'dark' ? 'rgba(75, 155, 255, 0.1)' : 'rgba(75, 155, 255, 0.05)'
+            }}
+          />
+        ))}
+      </div>
     </div>
   </div>
 );
@@ -418,18 +633,13 @@ const PatternMiniChart = ({ patternCoords, currentPrice }) => {
         <div key={patternName} className="pattern-chart-item">
           <div className="pattern-header">
             <strong>{patternName}</strong>
-            <span className="pattern-score">Score: {coords.score}</span>
+            <span className="pattern-score">Score: {coords.score || 'N/A'}</span>
           </div>
           <div className="pattern-details">
-            <span className="pattern-type">Type: {coords.type}</span>
-            {coords.prices && (
+            <span className="pattern-type">Type: {coords.type || 'N/A'}</span>
+            {coords.peak_prices && (
               <div className="pattern-prices">
-                Prices: {coords.prices.map(p => `$${p.toFixed(2)}`).join(' → ')}
-              </div>
-            )}
-            {coords.bars && (
-              <div className="pattern-bars">
-                Bars: {coords.bars.join(', ')}
+                Prices: {coords.peak_prices.map(p => `$${parseFloat(p).toFixed(2)}`).join(' → ')}
               </div>
             )}
           </div>
@@ -481,7 +691,7 @@ const ResultTabs = ({ result }) => {
 
   // Calculate risk score based on position confidence
   const riskScore = result?.position_confidence ? 
-    parseInt(result.position_confidence.replace('%', '')) : 45;
+    parseInt(result.position_confidence.toString().replace('%', '')) : 45;
 
   return (
     <AnimatedCard className="result-tabs">
@@ -645,16 +855,16 @@ const ResultTabs = ({ result }) => {
               {result?.enhanced_sentiment && (
                 <div className="sentiment-details">
                   <div className="summary-item">
-                    <span>Market Bias:</span> <strong>{result.enhanced_sentiment['Market Bias']}</strong>
+                    <span>Market Bias:</span> <strong>{result.enhanced_sentiment['Market Bias'] || 'N/A'}</strong>
                   </div>
                   <div className="summary-item">
-                    <span>Strength:</span> <strong>{result.enhanced_sentiment['Strength']}</strong>
+                    <span>Strength:</span> <strong>{result.enhanced_sentiment['Strength'] || 'N/A'}</strong>
                   </div>
                   <div className="summary-item">
-                    <span>Trend:</span> <strong>{result.enhanced_sentiment['Short-Term Trend']}</strong>
+                    <span>Trend:</span> <strong>{result.enhanced_sentiment['Short-Term Trend'] || 'N/A'}</strong>
                   </div>
                   <div className="summary-item">
-                    <span>Volume:</span> <strong>{result.enhanced_sentiment['Volume Status']}</strong>
+                    <span>Volume:</span> <strong>{result.enhanced_sentiment['Volume Status'] || 'N/A'}</strong>
                   </div>
                 </div>
               )}
@@ -665,11 +875,11 @@ const ResultTabs = ({ result }) => {
           <div className="tab-panel">
             <div className="result-card">
               <h4>Detected Patterns</h4>
-              {result?.patterns && result.patterns.length > 0 ? (
+              {result?.patterns && Array.isArray(result.patterns) && result.patterns.length > 0 ? (
                 <div className="patterns-list">
                   {result.patterns.map((pattern, index) => (
                     <div key={index} className="pattern-tag">
-                      {pattern}
+                      {typeof pattern === 'string' ? pattern : pattern.pattern || pattern.name || 'Unknown Pattern'}
                     </div>
                   ))}
                 </div>
@@ -868,37 +1078,55 @@ const Testimonials = () => {
   );
 };
 
-// Live Market Analysis Section
-const LiveMarketAnalysis = ({ marketData }) => (
-  <section className="market-analysis-section" id="market-analysis">
-    <div className="section-header">
-      <h2>Live Market Analysis</h2>
-      <div className="refresh-indicator">
-        <FaBolt className="bolt-icon" />
-        <span>Updated just now</span>
+// Live Market Analysis Section with Pattern and Bias Boxes
+const LiveMarketAnalysis = ({ marketData }) => {
+  // Use SWR for data fetching with auto-refresh
+  const { data: patternData, error: patternError, isLoading: patternLoading, mutate: refreshPatterns } = 
+    useSWR('/premium/patterns', fetcher, { refreshInterval: 180000 }); // 3 minutes
+
+  const { data: biasData, error: biasError, isLoading: biasLoading, mutate: refreshBiases } = 
+    useSWR('/premium/bias', fetcher, { refreshInterval: 180000 }); // 3 minutes
+
+  return (
+    <section className="market-analysis-section" id="market-analysis">
+      <div className="section-header">
+        <h2>Live Market Analysis</h2>
+        <div className="refresh-indicator">
+          <FaBolt className="bolt-icon" />
+          <span>Updated just now</span>
+        </div>
       </div>
-    </div>
-    
-    <div className="market-grid">
-      <FearGreedIndicator 
-        value={marketData.fearGreed.value} 
-        status={marketData.fearGreed.status} 
-      />
       
-      <TopVolumeCoins coins={marketData.topVolume} />
-      
-      <MarketDominance 
-        futures={marketData.dominance.futures} 
-        spot={marketData.dominance.spot} 
-      />
-      
-      <PriceTrend coins={marketData.priceTrend} />
-    </div>
-  </section>
-);
+      <div className="analysis-container">
+        <div className="analysis-highlights">
+          <PatternHighlightBox patterns={patternData} loading={patternLoading} />
+          <BiasHighlightBox biases={biasData} loading={biasLoading} />
+          <HistoryPanel />
+        </div>
+        
+        <div className="market-grid">
+          <FearGreedIndicator 
+            value={marketData.fearGreed.value} 
+            status={marketData.fearGreed.status} 
+          />
+          
+          <TopVolumeCoins coins={marketData.topVolume} />
+          
+          <MarketDominance 
+            futures={marketData.dominance.futures} 
+            spot={marketData.dominance.spot} 
+          />
+          
+          <PriceTrend coins={marketData.priceTrend} />
+        </div>
+      </div>
+    </section>
+  );
+};
 
 export default function Home() {
   const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
   const [market, setMarket] = useState("Futures");
   const [positionType, setPositionType] = useState("Long");
   const [timeframe, setTimeframe] = useState("4h");
@@ -978,8 +1206,8 @@ export default function Home() {
       const statsInterval = setInterval(() => {
         setStats(prev => ({
           activeUsers: `${Math.floor(Math.random() * 1000) + 2500}`.replace(/\B(?=(\d{3})+(?!\d))/g, ","),
-          analysesToday: `${parseInt(prev.analysesToday.replace(/,/g, "")) + Math.floor(Math.random() * 100) + 50}`.replace(/\B(?=(\d{3})+(?!\d))/g, ","),
-          accuracyRate: `${Math.min(85, Math.max(70, parseInt(prev.accuracyRate) + (Math.random() > 0.5 ? 1 : -1)))}`
+          analysesToday: `${parseInt(prev.analysesToday.toString().replace(/,/g, "")) + Math.floor(Math.random() * 100) + 50}`.replace(/\B(?=(\d{3})+(?!\d))/g, ","),
+          accuracyRate: `${Math.min(85, Math.max(70, parseInt(prev.accuracyRate.toString()) + (Math.random() > 0.5 ? 1 : -1)))}`
         }));
       }, 60000); // Update every minute
       
@@ -1122,10 +1350,12 @@ export default function Home() {
     setLoading(true);
     try {
       const response = await fetch(
-        process.env.NEXT_PUBLIC_BACKEND_URL || "https://python-backend-pr.vercel.app/analyze",
+        `${BACKEND_URL}/analyze`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+          },
           body: JSON.stringify(data),
         }
       );
@@ -1175,6 +1405,8 @@ export default function Home() {
             <Link href="#howitworks" onClick={() => setMenuOpen(false)}>How It Works</Link>
             <Link href="#market-analysis" onClick={() => setMenuOpen(false)}>Market Analysis</Link>
             <Link href="#faq" onClick={() => setMenuOpen(false)}>FAQ</Link>
+            <Link href="/patterns">Patterns</Link>
+            <Link href="/bias">Bias Data</Link>
             <Link href="/support" onClick={() => setMenuOpen(false)}>Support</Link>
             <Link href="/login" onClick={() => setMenuOpen(false)}>Login</Link>
           </nav>
@@ -1571,6 +1803,55 @@ export default function Home() {
         [data-theme="dark"] .hero {
           background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
         }
+        
+        /* Enhanced background elements */
+        .bg-elements {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          overflow: hidden;
+          z-index: 0;
+        }
+        
+        .grid-lines {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background-image: linear-gradient(to right, rgba(67, 192, 246, 0.05) 1px, transparent 1px),
+                            linear-gradient(to bottom, rgba(67, 192, 246, 0.05) 1px, transparent 1px);
+          background-size: 50px 50px;
+          opacity: 0.3;
+        }
+        
+        [data-theme="dark"] .grid-lines {
+          background-image: linear-gradient(to right, rgba(67, 192, 246, 0.07) 1px, transparent 1px),
+                            linear-gradient(to bottom, rgba(67, 192, 246, 0.07) 1px, transparent 1px);
+        }
+        
+        .particles {
+          position: absolute;
+          width: 100%;
+          height: 100%;
+        }
+        
+        .particle {
+          position: absolute;
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: rgba(67, 192, 246, 0.2);
+          animation: float-particle 15s infinite linear;
+        }
+        
+        @keyframes float-particle {
+          0% { transform: translateY(0) rotate(0deg); opacity: 0.2; }
+          50% { transform: translateY(-20px) rotate(180deg); opacity: 0.4; }
+          100% { transform: translateY(0) rotate(360deg); opacity: 0.2; }
+        }
 
         .ticker {
           position: absolute;
@@ -1778,16 +2059,6 @@ export default function Home() {
           margin: 0 auto;
           overflow: hidden;
           border: 1px solid var(--border-light);
-          animation: card-fade-in 0.6s ease-out forwards;
-          opacity: 0;
-          transform: translateY(20px);
-        }
-
-        @keyframes card-fade-in {
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
         }
 
         .wizard, .result-tabs, .premium-section, .history-section {
@@ -1799,6 +2070,247 @@ export default function Home() {
           margin: 2rem auto;
           overflow: hidden;
           border: 1px solid var(--border-light);
+        }
+        
+        /* New highlight box styles */
+        .analysis-container {
+          max-width: 1200px;
+          margin: 0 auto;
+          padding: 0 1rem;
+        }
+        
+        .analysis-highlights {
+          max-width: 800px;
+          margin: 0 auto 3rem;
+        }
+        
+        .highlight-box {
+          background: var(--bg-card);
+          border-radius: var(--radius-lg);
+          padding: 1.5rem;
+          box-shadow: var(--shadow-md);
+          border: 1px solid var(--border-light);
+          margin-bottom: 1.5rem;
+          overflow: hidden;
+        }
+        
+        .highlight-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 1.5rem;
+        }
+        
+        .header-left {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+        }
+        
+        .header-right {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+        }
+        
+        .header-icon {
+          font-size: 1.25rem;
+          color: var(--accent-blue);
+        }
+        
+        .highlight-header h3 {
+          font-size: 1.2rem;
+          font-weight: 700;
+          color: var(--text-primary);
+        }
+        
+        .updated-badge {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          font-size: 0.8rem;
+          color: var(--text-secondary);
+          background: var(--bg-secondary);
+          padding: 0.3rem 0.6rem;
+          border-radius: var(--radius-md);
+        }
+        
+        .refresh-btn {
+          background: none;
+          border: none;
+          cursor: pointer;
+          color: var(--accent-blue);
+          font-size: 1rem;
+          transition: transform 0.2s;
+        }
+        
+        .refresh-btn:hover {
+          transform: rotate(180deg);
+        }
+        
+        .highlight-content {
+          position: relative;
+        }
+        
+        .pattern-items, .bias-items {
+          margin-bottom: 2rem;
+        }
+        
+        .pattern-item, .bias-item {
+          background: var(--bg-secondary);
+          border-radius: var(--radius-md);
+          padding: 1rem;
+          margin-bottom: 1rem;
+        }
+        
+        [data-theme="dark"] .pattern-item, 
+        [data-theme="dark"] .bias-item {
+          background: rgba(67, 192, 246, 0.05);
+        }
+        
+        .pattern-title, .bias-title {
+          font-weight: 600;
+          font-size: 1.1rem;
+          margin-bottom: 0.5rem;
+        }
+        
+        .pattern-details, .bias-details {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.75rem;
+          font-size: 0.9rem;
+          color: var(--text-secondary);
+        }
+        
+        .probability, .target, .stoploss, .timestamp, .movement, .expected {
+          display: flex;
+          align-items: center;
+          gap: 0.3rem;
+        }
+        
+        .premium-value {
+          color: var(--accent-blue);
+          font-weight: 600;
+        }
+        
+        .premium-blur {
+          filter: blur(3px);
+          color: var(--text-muted);
+          user-select: none;
+        }
+        
+        .premium-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.5rem;
+          background: linear-gradient(135deg, rgba(67, 192, 246, 0.1), rgba(122, 92, 255, 0.1));
+          color: var(--accent-purple);
+          padding: 0.5rem 1rem;
+          border-radius: 2rem;
+          font-size: 0.85rem;
+          font-weight: 600;
+          margin-bottom: 1rem;
+        }
+        
+        .view-full-btn {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.5rem;
+          width: 100%;
+          padding: 0.75rem;
+          background: var(--button-gradient);
+          color: white;
+          border: none;
+          border-radius: var(--radius-md);
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.3s;
+        }
+        
+        .view-full-btn:hover {
+          transform: translateY(-2px);
+          box-shadow: var(--shadow-md);
+        }
+        
+        .loading-indicator {
+          text-align: center;
+          color: var(--text-secondary);
+          padding: 1rem;
+        }
+        
+        .empty-state {
+          text-align: center;
+          color: var(--text-secondary);
+          padding: 2rem;
+          background: var(--bg-secondary);
+          border-radius: var(--radius-md);
+          font-style: italic;
+        }
+        
+        .pattern-box {
+          border-top: 4px solid #FFA500;
+        }
+        
+        .bias-box {
+          border-top: 4px solid var(--accent-blue);
+        }
+        
+        /* History panel styles */
+        .history-panel {
+          background: var(--bg-card);
+          border-radius: var(--radius-lg);
+          border: 1px solid var(--border-light);
+          margin-top: 1rem;
+          overflow: hidden;
+        }
+        
+        .history-header {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          padding: 1rem 1.5rem;
+          cursor: pointer;
+          font-weight: 600;
+          color: var(--text-primary);
+          background: var(--bg-secondary);
+          transition: background-color 0.3s;
+        }
+        
+        [data-theme="dark"] .history-header {
+          background: rgba(67, 192, 246, 0.05);
+        }
+        
+        .history-header:hover {
+          background: rgba(67, 192, 246, 0.1);
+        }
+        
+        .history-content {
+          padding: 1rem 1.5rem;
+        }
+        
+        .history-item {
+          display: flex;
+          margin-bottom: 0.75rem;
+          padding-bottom: 0.75rem;
+          border-bottom: 1px solid var(--border-light);
+        }
+        
+        .history-item:last-child {
+          margin-bottom: 0;
+          padding-bottom: 0;
+          border-bottom: none;
+        }
+        
+        .history-time {
+          min-width: 80px;
+          color: var(--text-secondary);
+          font-size: 0.9rem;
+        }
+        
+        .history-description {
+          flex: 1;
+          font-size: 0.9rem;
         }
 
         .premium-section {
@@ -2480,6 +2992,9 @@ export default function Home() {
           color: var(--text-secondary);
         }
 
+       
+          
+
         .pattern-type, .pattern-prices, .pattern-bars {
           margin: 0.25rem 0;
         }
@@ -3057,6 +3572,25 @@ export default function Home() {
           height: 100vh;
           font-size: 1.5rem;
           color: var(--accent-blue);
+        }
+
+        /* Add styles for pattern and bias boxes */
+        .refresh-btn {
+          background: none;
+          border: none;
+          cursor: pointer;
+          color: var(--accent-blue);
+          font-size: 1rem;
+          transition: transform 0.2s;
+        }
+
+        .refresh-btn:hover {
+          transform: rotate(180deg);
+        }
+
+        .bias-list {
+          max-height: 150px;
+          overflow-y: auto;
         }
 
         @media (max-width: 768px) {
