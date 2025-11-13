@@ -1081,11 +1081,11 @@ const Testimonials = () => {
 // Live Market Analysis Section with Pattern and Bias Boxes
 const LiveMarketAnalysis = ({ marketData }) => {
   // Use SWR for data fetching with auto-refresh
-  const { data: patternData, error: patternError, isLoading: patternLoading, mutate: refreshPatterns } = 
-    useSWR('/premium/patterns', fetcher, { refreshInterval: 180000 }); // 3 minutes
+   const { data: patternData, error: patternError, isLoading: patternLoading } = 
+    useSWR(`${BACKEND_URL}/premium/patterns`, fetcher, { refreshInterval: 180000 });
 
-  const { data: biasData, error: biasError, isLoading: biasLoading, mutate: refreshBiases } = 
-    useSWR('/premium/bias', fetcher, { refreshInterval: 180000 }); // 3 minutes
+   const { data: biasData, error: biasError, isLoading: biasLoading } = 
+     useSWR(`${BACKEND_URL}/premium/bias`, fetcher, { refreshInterval: 180000 });
 
   return (
     <section className="market-analysis-section" id="market-analysis">
