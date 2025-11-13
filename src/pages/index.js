@@ -43,7 +43,7 @@ const AnimatedCard = ({ children, className = "", delay = 0 }) => (
 );
 
 // Use environment variable for backend URL
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+const BACKEND_URL =  'https://python-backend-pr.vercel.app' || 'http://localhost:8000';
 
 // SWR fetcher function
 const fetcher = async (url) => {
