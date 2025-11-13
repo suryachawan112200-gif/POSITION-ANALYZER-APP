@@ -43,7 +43,7 @@ const AnimatedCard = ({ children, className = "", delay = 0 }) => (
 );
 
 // Use environment variable for backend URL
-const BACKEND_URL =  'https://python-backend-pr.vercel.app' || 'http://localhost:8000';
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
 
 // SWR fetcher function
 const fetcher = async (url) => {
@@ -1082,10 +1082,10 @@ const Testimonials = () => {
 const LiveMarketAnalysis = ({ marketData }) => {
   // Use SWR for data fetching with auto-refresh
    const { data: patternData, error: patternError, isLoading: patternLoading } = 
-    useSWR(`${BACKEND_URL}/premium/patterns`, fetcher, { refreshInterval: 180000 });
+    useSWR('/premium/patterns', fetcher, { refreshInterval: 180000 });
 
    const { data: biasData, error: biasError, isLoading: biasLoading } = 
-     useSWR(`${BACKEND_URL}/premium/bias`, fetcher, { refreshInterval: 180000 });
+     useSWR('/premium/bias', fetcher, { refreshInterval: 180000 });
 
   return (
     <section className="market-analysis-section" id="market-analysis">
