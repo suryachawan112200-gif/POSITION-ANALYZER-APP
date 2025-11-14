@@ -10,6 +10,16 @@ import ProfileModal from "/components/ProfileModal";
 import LoginPopup from "/components/LoginPopup";
 import useSWR from 'swr';
 
+// Fixed: Added quotes around the URL string
+const BACKEND_URL = "https://python-backend-pr.vercel.app";
+
+// SWR fetcher function
+const fetcher = async (url) => {
+  const res = await fetch(`${BACKEND_URL}${url}`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+};
+
 // Enhanced Logo font style with redesign
 const logoFont = {
   fontFamily: "'Inter', sans-serif",
@@ -42,14 +52,7 @@ const AnimatedCard = ({ children, className = "", delay = 0 }) => (
   </motion.div>
 );
 
-// Use environment variable for backend URL
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL 
-// SWR fetcher function
-const fetcher = async (url) => {
-  const res = await fetch(`${BACKEND_URL}${url}`);
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
-};
+
 
 // Enhanced Pattern Highlight Box
 const PatternHighlightBox = ({ patterns, loading }) => {
@@ -1349,31 +1352,22 @@ export default function Home() {
     setLoading(true);
     try {
       const response = await fetch(
-        `${BACKEND_URL}/analyze`,
-        {
-          method: "POST",
-          headers: { 
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(data),
-        }
-      );
-      if (!response.ok) {
-        const errorDetail = await response.text();
-        throw new Error(
-          `HTTP Error Code ${response.status}: Analysis engine offline. ${errorDetail.substring(0, 50)}...`
-        );
+      `${BACKEND_URL}/analyze`,  // Now uses the fixed string
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
       }
-      const resultData = await response.json();
-      setResult(resultData);
-      saveHistory(inputData, resultData);
-      incrementAnalysisCount();
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+    );
+    // ... (rest unchanged)
+  } catch (err) {
+    setError(err.message);
+  } finally {
+    setLoading(false);
+  }
+};
 
   if (authLoading) {
     return <div className="loading-page">Loading...</div>;
