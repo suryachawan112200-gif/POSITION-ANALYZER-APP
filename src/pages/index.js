@@ -10,14 +10,33 @@ import ProfileModal from "/components/ProfileModal";
 import LoginPopup from "/components/LoginPopup";
 import useSWR from 'swr';
 
-// Fixed: Added quotes around the URL string
+// Fixed: Backend URL
 const BACKEND_URL = "https://python-backend-pr.vercel.app";
 
-// SWR fetcher function
+// FIXED: Enhanced SWR fetcher function with proper error handling
 const fetcher = async (url) => {
-  const res = await fetch(`${BACKEND_URL}${url}`);
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
+  try {
+    const res = await fetch(`${BACKEND_URL}${url}`, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (!res.ok) {
+      console.warn(`Failed to fetch ${url}: ${res.status}`);
+      // Return empty data instead of throwing for graceful fallback
+      return { patterns: [], biases: [], data: [] };
+    }
+    
+    const data = await res.json();
+    return data;
+  } catch (error) {
+    console.warn(`Fetch error for ${url}:`, error);
+    // Return empty data instead of throwing for graceful fallback
+    return { patterns: [], biases: [], data: [] };
+  }
 };
 
 // Enhanced Logo font style with redesign
@@ -52,9 +71,7 @@ const AnimatedCard = ({ children, className = "", delay = 0 }) => (
   </motion.div>
 );
 
-
-
-// Enhanced Pattern Highlight Box
+// FIXED: Enhanced Pattern Highlight Box with error handling
 const PatternHighlightBox = ({ patterns, loading }) => {
   const router = useRouter();
   const [lastUpdated, setLastUpdated] = useState(new Date());
@@ -67,7 +84,10 @@ const PatternHighlightBox = ({ patterns, loading }) => {
     router.push('/patterns');
   };
   
-  const topPatterns = patterns?.patterns?.slice(0, 2) || [];
+  // FIXED: Handle multiple data structures and provide fallbacks
+  const topPatterns = patterns?.patterns?.slice(0, 2) || 
+                     (Array.isArray(patterns) ? patterns.slice(0, 2) : []) || 
+                     [];
   
   return (
     <motion.div 
@@ -103,9 +123,9 @@ const PatternHighlightBox = ({ patterns, loading }) => {
                 </div>
                 <div className="pattern-details">
                   <div className="probability">Prob: <span className="premium-value">{pattern.probability || "82"}%</span></div>
-                  <div className="target">TGT: <span className="premium-blur">$3,300</span></div>
-                  <div className="stoploss">SL: <span className="premium-blur">$3,150</span></div>
-                  <div className="timestamp">Updated: {pattern.timestamp || lastUpdated.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+                  <div className="target">TGT: <span className="premium-blur">{pattern.target || "$3,300"}</span></div>
+                  <div className="stoploss">SL: <span className="premium-blur">{pattern.stoploss || "$3,150"}</span></div>
+                  <div className="timestamp">Updated: {pattern.timestamp ? new Date(pattern.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : lastUpdated.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
                 </div>
               </div>
             ))}
@@ -126,7 +146,7 @@ const PatternHighlightBox = ({ patterns, loading }) => {
   );
 };
 
-// Enhanced Bias Highlight Box
+// FIXED: Enhanced Bias Highlight Box with error handling
 const BiasHighlightBox = ({ biases, loading }) => {
   const router = useRouter();
   const [lastUpdated, setLastUpdated] = useState(new Date());
@@ -139,7 +159,10 @@ const BiasHighlightBox = ({ biases, loading }) => {
     router.push('/bias');
   };
   
-  const topBiases = biases?.biases?.slice(0, 2) || [];
+  // FIXED: Handle multiple data structures and provide fallbacks
+  const topBiases = biases?.biases?.slice(0, 2) || 
+                   (Array.isArray(biases) ? biases.slice(0, 2) : []) || 
+                   [];
   
   return (
     <motion.div 
@@ -174,7 +197,7 @@ const BiasHighlightBox = ({ biases, loading }) => {
                   {bias.symbol || "SOLUSDT"}: Strong {bias.bias || "Bullish"} ({bias.strength || "85"}%)
                 </div>
                 <div className="bias-details">
-                  <div className="movement">24h Move: <span className={bias.move > 0 ? "positive" : "negative"}>{bias.move || "+2.3"}%</span></div>
+                  <div className="movement">24h Move: <span className={(bias.move || 0) > 0 ? "positive" : "negative"}>{bias.move || "+2.3"}%</span></div>
                   <div className="expected">Expected: <span className="premium-blur">{bias.expected || "+3.5"}%</span></div>
                 </div>
               </div>
@@ -312,7 +335,7 @@ const TopVolumeCoins = ({ coins }) => (
         <div key={index} className="volume-item">
           <div className="coin-rank">#{index + 1}</div>
           <div className="coin-name">{coin.symbol}</div>
-          <div className="coin-volume">${coin.volume}</div>
+          <div className="coin-volume">{coin.volume}</div>
         </div>
       ))}
     </div>
@@ -860,7 +883,7 @@ const ResultTabs = ({ result }) => {
                     <span>Market Bias:</span> <strong>{result.enhanced_sentiment['Market Bias'] || 'N/A'}</strong>
                   </div>
                   <div className="summary-item">
-                    <span>Strength:</span> <strong>{result.enhanced_sentiment['Strength'] || 'N/A'}</strong>
+                    <span>Strength:</span> <strong>{result.enhanced_sentiment['Trend Strength'] || 'N/A'}</strong>
                   </div>
                   <div className="summary-item">
                     <span>Trend:</span> <strong>{result.enhanced_sentiment['Short-Term Trend'] || 'N/A'}</strong>
@@ -1080,14 +1103,28 @@ const Testimonials = () => {
   );
 };
 
-// Live Market Analysis Section with Pattern and Bias Boxes
+// FIXED: Live Market Analysis Section with better error handling
 const LiveMarketAnalysis = ({ marketData }) => {
-  // Use SWR for data fetching with auto-refresh
-   const { data: patternData, error: patternError, isLoading: patternLoading } = 
-    useSWR('/premium/patterns', fetcher, { refreshInterval: 180000 });
+  // FIXED: Enhanced SWR with better error handling and fallbacks
+  const { data: patternData, error: patternError, isLoading: patternLoading } = 
+    useSWR('/premium/patterns', fetcher, { 
+      refreshInterval: 180000,
+      fallbackData: { patterns: [] },
+      revalidateOnFocus: false,
+      onError: (error) => {
+        console.warn('Pattern fetch failed, using fallback data:', error);
+      }
+    });
 
-   const { data: biasData, error: biasError, isLoading: biasLoading } = 
-     useSWR('/premium/bias', fetcher, { refreshInterval: 180000 });
+  const { data: biasData, error: biasError, isLoading: biasLoading } = 
+    useSWR('/premium/bias', fetcher, { 
+      refreshInterval: 180000,
+      fallbackData: { biases: [] },
+      revalidateOnFocus: false,
+      onError: (error) => {
+        console.warn('Bias fetch failed, using fallback data:', error);
+      }
+    });
 
   return (
     <section className="market-analysis-section" id="market-analysis">
@@ -1236,42 +1273,55 @@ export default function Home() {
         const tickerData = await tickerRes.json();
         
         // Process ticker data for top coins
-        const topCoins = tickerData.result.list
-          .filter(coin => ['BTCUSDT', 'ETHUSDT', 'SOLUSDT'].includes(coin.symbol))
-          .map(coin => ({
-            symbol: coin.symbol.replace('USDT', ''),
-            price: parseFloat(coin.lastPrice).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-            change: parseFloat(coin.price24hPcnt) * 100
-          }));
-        
-        setTickerData(topCoins);
+        if (tickerData?.result?.list) {
+          const topCoins = tickerData.result.list
+            .filter(coin => ['BTCUSDT', 'ETHUSDT', 'SOLUSDT'].includes(coin.symbol))
+            .map(coin => ({
+              symbol: coin.symbol.replace('USDT', ''),
+              price: parseFloat(coin.lastPrice).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+              change: parseFloat(coin.price24hPcnt) * 100
+            }));
+          
+          if (topCoins.length > 0) {
+            setTickerData(topCoins);
+          }
+        }
         
         // Fetch Fear & Greed Index (using alternative API)
-        const fearGreedRes = await fetch('https://api.alternative.me/fng/?limit=1');
-        const fearGreedData = await fearGreedRes.json();
-        const fearGreedValue = parseInt(fearGreedData.data[0].value);
-        const fearGreedStatus = fearGreedData.data[0].value_classification;
+        try {
+          const fearGreedRes = await fetch('https://api.alternative.me/fng/?limit=1');
+          const fearGreedData = await fearGreedRes.json();
+          if (fearGreedData?.data?.[0]) {
+            const fearGreedValue = parseInt(fearGreedData.data[0].value);
+            const fearGreedStatus = fearGreedData.data[0].value_classification;
+            
+            setMarketData(prev => ({
+              ...prev,
+              fearGreed: { value: fearGreedValue, status: fearGreedStatus }
+            }));
+          }
+        } catch (fgError) {
+          console.warn('Fear & Greed Index fetch failed:', fgError);
+        }
         
         // Fetch top volume coins
-        const volumeRes = await fetch('https://api.bybit.com/v5/market/tickers?category=spot');
-        const volumeData = await volumeRes.json();
-        const topVolume = volumeData.result.list
-          .filter(coin => coin.symbol.endsWith('USDT'))
-          .sort((a, b) => parseFloat(b.turnover24h) - parseFloat(a.turnover24h))
-          .slice(0, 5)
-          .map(coin => ({
-            symbol: coin.symbol,
-            volume: `$${(parseFloat(coin.turnover24h) / 1000000).toFixed(0)}M`
+        if (tickerData?.result?.list) {
+          const topVolume = tickerData.result.list
+            .filter(coin => coin.symbol.endsWith('USDT'))
+            .sort((a, b) => parseFloat(b.turnover24h) - parseFloat(a.turnover24h))
+            .slice(0, 5)
+            .map(coin => ({
+              symbol: coin.symbol,
+              volume: `$${(parseFloat(coin.turnover24h) / 1000000).toFixed(0)}M`
+            }));
+          
+          setMarketData(prev => ({
+            ...prev,
+            topVolume
           }));
-        
-        // Update state with real data
-        setMarketData(prev => ({
-          ...prev,
-          fearGreed: { value: fearGreedValue, status: fearGreedStatus },
-          topVolume
-        }));
+        }
       } catch (error) {
-        console.error('Error fetching market data:', error);
+        console.warn('Error fetching market data:', error);
       }
     };
 
@@ -1312,6 +1362,7 @@ export default function Home() {
     }
   };
 
+  // FIXED: Complete submitData function with proper error handling
   const submitData = async () => {
     if (typeof window === "undefined") return;
 
@@ -1322,52 +1373,98 @@ export default function Home() {
 
     setResult(null);
     setError(null);
+    
     if (!coin || !entryPrice || !quantity) {
-      return alert("ERROR: Input parameters missing. Initiate full data sequence.");
+      alert("ERROR: Input parameters missing. Please fill all required fields.");
+      return;
     }
+    
     const parsedEntryPrice = parseFloat(entryPrice);
     const parsedQuantity = parseFloat(quantity);
+    
     if (isNaN(parsedEntryPrice) || isNaN(parsedQuantity)) {
-      return alert("ERROR: Price and Quantity must be numerical values.");
+      alert("ERROR: Price and Quantity must be valid numbers.");
+      return;
     }
+    
+    if (parsedEntryPrice <= 0 || parsedQuantity <= 0) {
+      alert("ERROR: Price and Quantity must be positive values.");
+      return;
+    }
+    
     const inputData = {
-      coin,
-      market,
-      timeframe,
-      positionType,
-      entryPrice: parsedEntryPrice,
-      quantity: parsedQuantity,
-    };
-    const data = {
-      asset_class: "crypto",
       coin: coin.toUpperCase(),
       market: market.toLowerCase(),
       timeframe: timeframe.toLowerCase(),
       position_type: positionType.toLowerCase(),
       entry_price: parsedEntryPrice,
       quantity: parsedQuantity,
-      has_both_positions: false,
-      risk_pct: 0.02,
     };
+
     setLoading(true);
+    
     try {
-      const response = await fetch(
-      `${BACKEND_URL}/analyze`,  // Now uses the fixed string
-      {
+      console.log("Sending request to backend:", inputData);
+      
+      // FIXED: Complete fetch with proper headers and error handling
+      const response = await fetch(`${BACKEND_URL}/analyze`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "Accept": "application/json",
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify(inputData),
+      });
+
+      console.log("Response status:", response.status);
+
+      // FIXED: Proper response handling
+      if (!response.ok) {
+        let errorMessage = `HTTP ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.detail || errorData.message || errorMessage;
+        } catch {
+          const errorText = await response.text();
+          errorMessage = errorText || errorMessage;
+        }
+        throw new Error(errorMessage);
       }
-    );
-    // ... (rest unchanged)
-  } catch (err) {
-    setError(err.message);
-  } finally {
-    setLoading(false);
-  }
-};
+
+      const result = await response.json();
+      console.log("Analysis result:", result);
+      
+      // FIXED: Set the result and save to history
+      setResult(result);
+      saveHistory(inputData, result);
+      incrementAnalysisCount();
+      
+      // Log success
+      console.log("✅ Analysis completed successfully");
+      
+    } catch (err) {
+      console.error("❌ Analysis error:", err);
+      
+      // FIXED: Enhanced user-friendly error messages
+      let userMessage = err.message;
+      
+      if (err.message.includes("fetch") || err.message.includes("Failed to fetch")) {
+        userMessage = "Connection error. Please check your internet connection and try again.";
+      } else if (err.message.includes("400") || err.message.includes("Bad Request")) {
+        userMessage = "Invalid input data. Please check your entries and try again.";
+      } else if (err.message.includes("500") || err.message.includes("Internal Server Error")) {
+        userMessage = "Server error. Please try again in a few moments.";
+      } else if (err.message.includes("404")) {
+        userMessage = "Service not found. Please try again later.";
+      } else if (err.message.includes("timeout") || err.message.includes("Timeout")) {
+        userMessage = "Request timeout. Please try again.";
+      }
+      
+      setError(userMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (authLoading) {
     return <div className="loading-page">Loading...</div>;
@@ -1465,8 +1562,25 @@ export default function Home() {
           loading={loading}
           submitData={submitData}
         />
-        {error && <div className="error-card">Error: {error}</div>}
-        {loading && <div className="loading-card">Processing... <span className="spinner">⚙️</span></div>}
+        {error && (
+          <div className="error-card">
+            <strong>Analysis Error:</strong> {error}
+            <button 
+              onClick={() => setError(null)} 
+              style={{ marginLeft: '10px', background: 'none', border: 'none', cursor: 'pointer' }}
+            >
+              ✕
+            </button>
+          </div>
+        )}
+        {loading && (
+          <div className="loading-card">
+            Processing your analysis... <span className="spinner">⚙️</span>
+            <div style={{ fontSize: '0.9em', marginTop: '0.5rem', opacity: 0.8 }}>
+              Please wait while we analyze market conditions
+            </div>
+          </div>
+        )}
         {result && <ResultTabs result={result} />}
         <RecentHistory />
       </main>
@@ -2721,6 +2835,7 @@ export default function Home() {
         .error-card {
           color: var(--error);
           border-left: 4px solid var(--error);
+          background: rgba(239, 68, 68, 0.05);
         }
 
         .loading-card .spinner {
@@ -2984,10 +3099,7 @@ export default function Home() {
           font-size: 0.85rem;
           color: var(--text-secondary);
         }
-
-       
-          
-
+        
         .pattern-type, .pattern-prices, .pattern-bars {
           margin: 0.25rem 0;
         }
@@ -3264,6 +3376,9 @@ export default function Home() {
           font-size: 0.7rem;
           font-weight: 600;
         }
+
+      
+          
 
         .market-card-content {
           display: flex;
