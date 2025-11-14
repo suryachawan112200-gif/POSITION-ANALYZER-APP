@@ -42,22 +42,30 @@ const AnimatedCard = ({ children, className = "", delay = 0 }) => (
   </motion.div>
 );
 
-// Use environment variable for backend URL
+// Use environment variable for backend URL - FIXED
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+console.log('BACKEND_URL:', BACKEND_URL); // Debug line
 
-// SWR fetcher function
+// SWR fetcher function - FIXED to avoid double URL
 const fetcher = async (url) => {
-  const res = await fetch(`${BACKEND_URL}${url}`);
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  // Make sure url starts with / or is a full URL
+  const fullUrl = url.startsWith('http') ? url : `${BACKEND_URL}${url}`;
+  console.log('Fetching from:', fullUrl); // Debug line
+  const res = await fetch(fullUrl);
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(`HTTP ${res.status}: ${errorText}`);
+  }
   return res.json();
 };
 
 // Enhanced Pattern Highlight Box
-const PatternHighlightBox = ({ patterns, loading }) => {
+const PatternHighlightBox = ({ patterns, loading, onRefresh }) => {
   const router = useRouter();
   const [lastUpdated, setLastUpdated] = useState(new Date());
   
   const refreshPatterns = () => {
+    onRefresh();
     setLastUpdated(new Date());
   };
   
@@ -125,11 +133,12 @@ const PatternHighlightBox = ({ patterns, loading }) => {
 };
 
 // Enhanced Bias Highlight Box
-const BiasHighlightBox = ({ biases, loading }) => {
+const BiasHighlightBox = ({ biases, loading, onRefresh }) => {
   const router = useRouter();
   const [lastUpdated, setLastUpdated] = useState(new Date());
   
   const refreshBiases = () => {
+    onRefresh();
     setLastUpdated(new Date());
   };
   
@@ -1078,29 +1087,43 @@ const Testimonials = () => {
   );
 };
 
-// Live Market Analysis Section with Pattern and Bias Boxes
+// Live Market Analysis Section with Pattern and Bias Boxes - FIXED
 const LiveMarketAnalysis = ({ marketData }) => {
-  // Use SWR for data fetching with auto-refresh
-   const { data: patternData, error: patternError, isLoading: patternLoading } = 
-    useSWR('/premium/patterns', fetcher, { refreshInterval: 180000 });
+  // Use SWR for data fetching with manual refresh
+   const { data: patternData, error: patternError, isLoading: patternLoading, mutate: refreshPatterns } = 
+    useSWR('/premium/patterns', fetcher);
 
-   const { data: biasData, error: biasError, isLoading: biasLoading } = 
-     useSWR('/premium/bias', fetcher, { refreshInterval: 180000 });
+   const { data: biasData, error: biasError, isLoading: biasLoading, mutate: refreshBiases } = 
+     useSWR('/premium/bias', fetcher);
+
+  console.log('Pattern data:', patternData);
+  console.log('Bias data:', biasData);
+  console.log('Pattern error:', patternError);
+  console.log('Bias error:', biasError);
 
   return (
     <section className="market-analysis-section" id="market-analysis">
       <div className="section-header">
         <h2>Live Market Analysis</h2>
-        <div className="refresh-indicator">
-          <FaBolt className="bolt-icon" />
-          <span>Updated just now</span>
+        <div className="refresh-actions">
+          <button onClick={() => {refreshPatterns(); refreshBiases();}} className="refresh-btn">
+            <FaRedoAlt /> Refresh Data
+          </button>
         </div>
       </div>
       
       <div className="analysis-container">
         <div className="analysis-highlights">
-          <PatternHighlightBox patterns={patternData} loading={patternLoading} />
-          <BiasHighlightBox biases={biasData} loading={biasLoading} />
+          <PatternHighlightBox 
+            patterns={patternData} 
+            loading={patternLoading} 
+            onRefresh={refreshPatterns}
+          />
+          <BiasHighlightBox 
+            biases={biasData} 
+            loading={biasLoading} 
+            onRefresh={refreshBiases}
+          />
           <HistoryPanel />
         </div>
         
@@ -1349,6 +1372,7 @@ export default function Home() {
     };
     setLoading(true);
     try {
+      console.log('Sending request to:', `${BACKEND_URL}/analyze`);
       const response = await fetch(
         `${BACKEND_URL}/analyze`,
         {
@@ -1359,6 +1383,7 @@ export default function Home() {
           body: JSON.stringify(data),
         }
       );
+      console.log('Response status:', response.status);
       if (!response.ok) {
         const errorDetail = await response.text();
         throw new Error(
@@ -1370,6 +1395,7 @@ export default function Home() {
       saveHistory(inputData, resultData);
       incrementAnalysisCount();
     } catch (err) {
+      console.error('Analysis error:', err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -2142,10 +2168,16 @@ export default function Home() {
           color: var(--accent-blue);
           font-size: 1rem;
           transition: transform 0.2s;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          padding: 0.5rem;
+          border-radius: var(--radius-sm);
         }
         
         .refresh-btn:hover {
           transform: rotate(180deg);
+          background: rgba(67, 192, 246, 0.1);
         }
         
         .highlight-content {
@@ -3208,7 +3240,13 @@ export default function Home() {
           font-weight: 600;
         }
 
-        .refresh-indicator {
+        .refresh-actions {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+        }
+
+        .refresh-indicator, .refresh-btn {
           display: flex;
           align-items: center;
           gap: 0.5rem;
