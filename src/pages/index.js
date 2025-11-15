@@ -9,13 +9,13 @@ import LoginPopup from "/components/LoginPopup";
 import useSWR from 'swr';
 import { useState, useEffect, useRef } from "react";
 
-// FIXED: Correct Backend URL - Using your actual backend URL
+// Correct Backend URL
 const BACKEND_URL = "https://python-backend-pr.vercel.app";
 
-// Enhanced SWR fetcher function with proper error handling
+// Enhanced SWR fetcher function with better logging for debugging
 const fetcher = async (url) => {
   try {
-    console.log("Fetching URL:", url);
+    console.log(`[Fetcher] 🚀 Fetching URL: ${url}`);
     const res = await fetch(url, {
       method: 'GET',
       headers: {
@@ -25,18 +25,23 @@ const fetcher = async (url) => {
     });
     
     if (!res.ok) {
-      console.warn(`Failed to fetch ${url}: ${res.status}`);
-      return { patterns: [], biases: [], data: [] };
+      const errorText = await res.text();
+      console.error(`[Fetcher] ❌ Failed to fetch ${url}: Status ${res.status}`, errorText);
+      // Return a default structure to prevent app crashes
+      return { patterns: [], biases: [] }; 
     }
     
     const data = await res.json();
-    console.log("Fetched data:", data);
+    // IMPORTANT: Check your browser console for this log to see the real data structure!
+    console.log(`[Fetcher] ✅ Successfully fetched data from ${url}:`, data);
     return data;
   } catch (error) {
-    console.warn(`Fetch error for ${url}:`, error);
-    return { patterns: [], biases: [], data: [] };
+    console.error(`[Fetcher] 🚨 Network or parsing error for ${url}:`, error);
+    // Return a default structure on critical failure
+    return { patterns: [], biases: [] };
   }
 };
+
 
 // Enhanced Logo font style with redesign
 const logoFont = {
@@ -75,7 +80,8 @@ const PatternHighlightBox = ({ patterns, loading }) => {
   const router = useRouter();
   const [lastUpdated, setLastUpdated] = useState(new Date());
   
-  // FIXED: Extract patterns array correctly
+  // This logic assumes the 'patterns' prop is an object like { patterns: [...] }
+  // Check your console logs from the fetcher to confirm this structure.
   const topPatterns = patterns?.patterns?.slice(0, 2) || [];
   
   const refreshPatterns = () => {
@@ -114,7 +120,6 @@ const PatternHighlightBox = ({ patterns, loading }) => {
         ) : topPatterns.length > 0 ? (
           <div className="pattern-items">
             {topPatterns.map((pattern, index) => (
-              // FIXED: Use correct data structure and key
               <div key={`${pattern.symbol}-${index}`} className="pattern-item">
                 <div className="pattern-title">
                   {pattern.symbol || "ETHUSDT"}: {pattern.pattern || "Rectangle"} ({pattern.bias || "Bullish"})
@@ -129,7 +134,7 @@ const PatternHighlightBox = ({ patterns, loading }) => {
             ))}
           </div>
         ) : (
-          <div className="empty-state">No significant patterns detected</div>
+          <div className="empty-state">No significant patterns detected. The API might be returning no data.</div>
         )}
         
         <div className="premium-badge">
@@ -149,7 +154,7 @@ const BiasHighlightBox = ({ biases, loading }) => {
   const router = useRouter();
   const [lastUpdated, setLastUpdated] = useState(new Date());
   
-  // FIXED: Extract biases array correctly
+  // This logic assumes the 'biases' prop is an object like { biases: [...] }
   const topBiases = biases?.biases?.slice(0, 2) || [];
   
   const refreshBiases = () => {
@@ -188,7 +193,6 @@ const BiasHighlightBox = ({ biases, loading }) => {
         ) : topBiases.length > 0 ? (
           <div className="bias-items">
             {topBiases.map((bias, index) => (
-              // FIXED: Use correct data structure and key
               <div key={`${bias.symbol}-${index}`} className="bias-item">
                 <div className="bias-title">
                   {bias.symbol || "SOLUSDT"}: Strong {bias.bias || "Bullish"} ({bias.strength || bias.confidence || "75"}%)
@@ -201,7 +205,7 @@ const BiasHighlightBox = ({ biases, loading }) => {
             ))}
           </div>
         ) : (
-          <div className="empty-state">No strong bias detected</div>
+          <div className="empty-state">No strong bias detected. The API might be returning no data.</div>
         )}
         
         <div className="premium-badge">
@@ -241,7 +245,6 @@ const HistoryPanel = () => {
       </summary>
       <div className="history-content">
         {history.map((item) => (
-          // FIXED: Using unique timestamp as key instead of index
           <div key={item.timestamp} className="history-item">
             <div className="history-time">
               {new Date(item.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
@@ -330,7 +333,6 @@ const TopVolumeCoins = ({ coins }) => (
     </div>
     <div className="top-volume-list">
       {coins.map((coin, index) => (
-        // FIXED: Using unique symbol as key instead of index
         <div key={coin.symbol} className="volume-item">
           <div className="coin-rank">#{index + 1}</div>
           <div className="coin-name">{coin.symbol}</div>
@@ -353,7 +355,6 @@ const MarketDominance = ({ futures, spot }) => (
         <h4>Futures</h4>
         <div className="dominance-list">
           {futures.map((coin) => (
-            // FIXED: Using unique symbol as key instead of index
             <div key={coin.symbol} className="dominance-item">
               <div className="coin-name">{coin.symbol}</div>
               <div className="coin-dominance">{coin.dominance}%</div>
@@ -365,7 +366,6 @@ const MarketDominance = ({ futures, spot }) => (
         <h4>Spot</h4>
         <div className="dominance-list">
           {spot.map((coin) => (
-            // FIXED: Using unique symbol as key instead of index
             <div key={coin.symbol} className="dominance-item">
               <div className="coin-name">{coin.symbol}</div>
               <div className="coin-dominance">{coin.dominance}%</div>
@@ -386,7 +386,6 @@ const PriceTrend = ({ coins }) => (
     </div>
     <div className="price-trend-list">
       {coins.map((coin) => (
-        // FIXED: Using unique symbol as key instead of index
         <div key={coin.symbol} className="trend-item">
           <div className="coin-name">{coin.symbol}</div>
           <div className={`trend-change ${coin.change > 0 ? 'positive' : 'negative'}`}>
@@ -403,7 +402,6 @@ const Hero = ({ scrollToDashboard, tickerData, theme, stats }) => (
   <div className="hero">
     <div className="ticker">
       {tickerData.map((item) => (
-        // FIXED: Using unique symbol as key instead of index
         <span key={item.symbol} className="ticker-item">
           {item.symbol}: ${item.price} <span className={`ticker-change ${item.change > 0 ? 'positive' : 'negative'}`}>{item.change > 0 ? '+' : ''}{item.change}%</span>
         </span>
@@ -904,7 +902,6 @@ const ResultTabs = ({ result }) => {
               {result?.patterns && Array.isArray(result.patterns) && result.patterns.length > 0 ? (
                 <div className="patterns-list">
                   {result.patterns.map((pattern, index) => (
-                    // FIXED: Using robust key for string or object
                     <div key={typeof pattern === 'string' ? pattern : (pattern.name || index)} className="pattern-tag">
                       {typeof pattern === 'string' ? pattern : pattern.pattern || pattern.name || 'Unknown Pattern'}
                     </div>
@@ -950,9 +947,6 @@ const ResultTabs = ({ result }) => {
     </AnimatedCard>
   );
 };
-
-// Dynamically import RecentHistory to avoid SSR issues with localStorage
-// const RecentHistory = dynamic(() => import("/components/RecentHistory"), { ssr: false });
 
 // FAQ Item Component
 const FAQItem = ({ question, answer }) => {
@@ -1041,7 +1035,6 @@ const PremiumSection = () => {
         
         <ul className="pricing-features">
           {plans[selectedPlan].features.map((feature) => (
-            // FIXED: Using unique feature string as key instead of index
             <li key={feature}>
               <span className="feature-icon">✓</span>
               {feature}
@@ -1095,7 +1088,6 @@ const Testimonials = () => {
       <h2>Trader Testimonials</h2>
       <div className="carousel">
         {testimonials.map((testimonial) => (
-          // FIXED: Using unique author as key instead of index
           <AnimatedCard key={testimonial.author} className="testimonial-card">
             <p>"{testimonial.text}"</p>
             <cite>- {testimonial.author}, {testimonial.role}</cite>
@@ -1107,30 +1099,31 @@ const Testimonials = () => {
   );
 };
 
-// Live Market Analysis Section - FIXED to handle correct data format
+// Live Market Analysis Section - FIXED with correct data handling and logging
 const LiveMarketAnalysis = ({ marketData }) => {
-  const { data: patternData, isLoading: patternLoading, error: patternError } = 
-    useSWR(`${BACKEND_URL}/premium/patterns`, fetcher, {
+  // SWR hook for patterns
+  const { data: patternData, isLoading: patternLoading } = 
+    useSWR(`http://127.0.0.1:8000/premium/patterns`, fetcher, {
       refreshInterval: 180000, // 3 minutes
-      fallbackData: { patterns: [] },
       revalidateOnFocus: false,
-      onError: (error) => {
-        console.warn('Pattern fetch failed, using fallback data:', error);
-      }
     });
 
-  const { data: biasData, isLoading: biasLoading, error: biasError } = 
-    useSWR(`${BACKEND_URL}/premium/bias`, fetcher, {
+  // SWR hook for biases
+  const { data: biasData, isLoading: biasLoading } = 
+    useSWR(`http://127.0.0.1:8000/premium/bias`, fetcher, {
       refreshInterval: 180000, // 3 minutes
-      fallbackData: { biases: [] },
       revalidateOnFocus: false,
-      onError: (error) => {
-        console.warn('Bias fetch failed, using fallback data:', error);
-      }
     });
 
-  console.log("Pattern Data:", patternData);
-  console.log("Bias Data:", biasData);
+  // Log the data received by the component to help debug
+  useEffect(() => {
+    if (patternData) {
+      console.log("[LiveMarketAnalysis] 📊 Received Pattern Data Prop:", patternData);
+    }
+    if (biasData) {
+      console.log("[LiveMarketAnalysis] 📈 Received Bias Data Prop:", biasData);
+    }
+  }, [patternData, biasData]);
 
   return (
     <section className="market-analysis-section" id="market-analysis">
@@ -1144,9 +1137,9 @@ const LiveMarketAnalysis = ({ marketData }) => {
       
       <div className="analysis-container">
         <div className="analysis-highlights">
-          {/* FIXED: Pass correct data to components */}
-          <PatternHighlightBox patterns={patternData || { patterns: [] }} loading={patternLoading} />
-          <BiasHighlightBox biases={biasData || { biases: [] }} loading={biasLoading} />
+          {/* Pass the fetched data and a more robust loading state. */}
+          <PatternHighlightBox patterns={patternData || { patterns: [] }} loading={patternLoading || !patternData} />
+          <BiasHighlightBox biases={biasData || { biases: [] }} loading={biasLoading || !biasData} />
           <HistoryPanel />
         </div>
         
@@ -1449,19 +1442,24 @@ export default function Home() {
 
   return (
     <>
+      {/* FIXED: Added unique `key` props to each child of Head to resolve the warning. */}
       <Head>
-        <title>AIVISOR: Neural Crypto Analytics</title>
+        <title key="title">AIVISOR: Neural Crypto Analytics</title>
         <meta
+          key="viewport"
           name="viewport"
           content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
         />
-        <meta name="description" content="AI-powered crypto position analytics for traders." />
+        <meta 
+          key="description"
+          name="description" 
+          content="AI-powered crypto position analytics for traders." 
+        />
         <link
+          key="fonts"
           href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
           rel="stylesheet"
         />
-        {/* FIXED: Added key prop to avoid React warning */}
-        <meta key="charset" charSet="utf-8" />
       </Head>
 
       <header className="header">
@@ -1561,7 +1559,6 @@ export default function Home() {
           </div>
         )}
         {result && <ResultTabs result={result} />}
-        {/* <RecentHistory /> */}
       </main>
 
       <LiveMarketAnalysis marketData={marketData} />
@@ -3326,6 +3323,8 @@ export default function Home() {
           background: var(--bg-secondary);
         }
 
+       
+
         .market-card-header, .fear-greed-header, .top-volume-header, .dominance-header, .price-trend-header {
           display: flex;
           align-items: center;
@@ -3714,7 +3713,6 @@ export default function Home() {
             padding: 0;
             margin: 1rem 0;
           }
-          
           .wizard, .result-tabs, .history-section, .premium-section {
             padding: 1.5rem;
             margin: 0 0.5rem;
