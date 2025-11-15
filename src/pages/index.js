@@ -1,28 +1,27 @@
 import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
 import { FaUserCircle, FaBars, FaMoon, FaSun, FaChartLine, FaRobot, FaCog, FaHistory, FaBolt, FaFire, FaChartBar, FaTrophy, FaShareAlt, FaArrowUp, FaArrowDown, FaExchangeAlt, FaPercentage, FaClock, FaUsers, FaSearch, FaStar, FaInfoCircle, FaDownload, FaBell, FaLock, FaCheck, FaTimes, FaArrowRight, FaRedoAlt } from "react-icons/fa";
 import { useAuth } from "/contexts/AuthContext";
 import ProfileModal from "/components/ProfileModal";
 import LoginPopup from "/components/LoginPopup";
 import useSWR from 'swr';
-import { useState, useEffect, useRef } from "react"; // FIXED: Added missing hook imports
+import { useState, useEffect, useRef } from "react";
 
-// FIXED: Correct Backend URL - Replace with your actual deployed backend URL
-const BACKEND_URL = "https://position-analyzer-app.vercel.app";
+// FIXED: Correct Backend URL - Using your actual backend URL
+const BACKEND_URL = "https://python-backend-pr.vercel.app";
 
-// Enhanced SWR fetcher function with proper error handling and CORS
+// Enhanced SWR fetcher function with proper error handling
 const fetcher = async (url) => {
   try {
-    const res = await fetch(`${BACKEND_URL}${url}`, {
+    console.log("Fetching URL:", url);
+    const res = await fetch(url, {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
         'Content-Type': 'application/json',
       },
-      credentials: 'include'
     });
     
     if (!res.ok) {
@@ -31,6 +30,7 @@ const fetcher = async (url) => {
     }
     
     const data = await res.json();
+    console.log("Fetched data:", data);
     return data;
   } catch (error) {
     console.warn(`Fetch error for ${url}:`, error);
@@ -70,10 +70,13 @@ const AnimatedCard = ({ children, className = "", delay = 0 }) => (
   </motion.div>
 );
 
-// Enhanced Pattern Highlight Box with error handling
+// Enhanced Pattern Highlight Box - FIXED to handle correct data format
 const PatternHighlightBox = ({ patterns, loading }) => {
   const router = useRouter();
   const [lastUpdated, setLastUpdated] = useState(new Date());
+  
+  // FIXED: Extract patterns array correctly
+  const topPatterns = patterns?.patterns?.slice(0, 2) || [];
   
   const refreshPatterns = () => {
     setLastUpdated(new Date());
@@ -82,8 +85,6 @@ const PatternHighlightBox = ({ patterns, loading }) => {
   const navigateToPatterns = () => {
     router.push('/patterns');
   };
-  
-  const topPatterns = patterns?.patterns?.slice(0, 2) || (Array.isArray(patterns) ? patterns.slice(0, 2) : []);
   
   return (
     <motion.div 
@@ -113,15 +114,15 @@ const PatternHighlightBox = ({ patterns, loading }) => {
         ) : topPatterns.length > 0 ? (
           <div className="pattern-items">
             {topPatterns.map((pattern, index) => (
-              // FIXED: Using unique identifier from pattern object as key
-              <div key={`${pattern.symbol}-${pattern.pattern}-${index}`} className="pattern-item">
+              // FIXED: Use correct data structure and key
+              <div key={`${pattern.symbol}-${index}`} className="pattern-item">
                 <div className="pattern-title">
                   {pattern.symbol || "ETHUSDT"}: {pattern.pattern || "Rectangle"} ({pattern.bias || "Bullish"})
                 </div>
                 <div className="pattern-details">
-                  <div className="probability">Prob: <span className="premium-value">{pattern.probability || "82"}%</span></div>
-                  <div className="target">TGT: <span className="premium-blur">{pattern.target || "$3,300"}</span></div>
-                  <div className="stoploss">SL: <span className="premium-blur">{pattern.stoploss || "$3,150"}</span></div>
+                  <div className="probability">Prob: <span className="premium-value">{pattern.confidence || pattern.score || "70"}%</span></div>
+                  <div className="target">TGT: <span className="premium-blur">${pattern.target || "N/A"}</span></div>
+                  <div className="stoploss">SL: <span className="premium-blur">${pattern.stop_loss || "N/A"}</span></div>
                   <div className="timestamp">Updated: {pattern.timestamp ? new Date(pattern.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : lastUpdated.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
                 </div>
               </div>
@@ -143,10 +144,13 @@ const PatternHighlightBox = ({ patterns, loading }) => {
   );
 };
 
-// Enhanced Bias Highlight Box with error handling
+// Enhanced Bias Highlight Box - FIXED to handle correct data format
 const BiasHighlightBox = ({ biases, loading }) => {
   const router = useRouter();
   const [lastUpdated, setLastUpdated] = useState(new Date());
+  
+  // FIXED: Extract biases array correctly
+  const topBiases = biases?.biases?.slice(0, 2) || [];
   
   const refreshBiases = () => {
     setLastUpdated(new Date());
@@ -155,8 +159,6 @@ const BiasHighlightBox = ({ biases, loading }) => {
   const navigateToBias = () => {
     router.push('/bias');
   };
-  
-  const topBiases = biases?.biases?.slice(0, 2) || (Array.isArray(biases) ? biases.slice(0, 2) : []);
   
   return (
     <motion.div 
@@ -186,10 +188,10 @@ const BiasHighlightBox = ({ biases, loading }) => {
         ) : topBiases.length > 0 ? (
           <div className="bias-items">
             {topBiases.map((bias, index) => (
-              // FIXED: Using unique identifier from bias object as key
+              // FIXED: Use correct data structure and key
               <div key={`${bias.symbol}-${index}`} className="bias-item">
                 <div className="bias-title">
-                  {bias.symbol || "SOLUSDT"}: Strong {bias.bias || "Bullish"} ({bias.strength || "85"}%)
+                  {bias.symbol || "SOLUSDT"}: Strong {bias.bias || "Bullish"} ({bias.strength || bias.confidence || "75"}%)
                 </div>
                 <div className="bias-details">
                   <div className="movement">24h Move: <span className={(bias.move || 0) > 0 ? "positive" : "negative"}>{bias.move || "+2.3"}%</span></div>
@@ -950,7 +952,7 @@ const ResultTabs = ({ result }) => {
 };
 
 // Dynamically import RecentHistory to avoid SSR issues with localStorage
-const RecentHistory = dynamic(() => import("/components/RecentHistory"), { ssr: false });
+// const RecentHistory = dynamic(() => import("/components/RecentHistory"), { ssr: false });
 
 // FAQ Item Component
 const FAQItem = ({ question, answer }) => {
@@ -1105,11 +1107,11 @@ const Testimonials = () => {
   );
 };
 
-// Live Market Analysis Section
+// Live Market Analysis Section - FIXED to handle correct data format
 const LiveMarketAnalysis = ({ marketData }) => {
-  const { data: patternData, isLoading: patternLoading } = 
-    useSWR('/premium/patterns/', fetcher, {
-      refreshInterval: 180000,
+  const { data: patternData, isLoading: patternLoading, error: patternError } = 
+    useSWR(`${BACKEND_URL}/premium/patterns`, fetcher, {
+      refreshInterval: 180000, // 3 minutes
       fallbackData: { patterns: [] },
       revalidateOnFocus: false,
       onError: (error) => {
@@ -1117,15 +1119,18 @@ const LiveMarketAnalysis = ({ marketData }) => {
       }
     });
 
-  const { data: biasData, isLoading: biasLoading } = 
-    useSWR('/premium/bias/', fetcher, {
-      refreshInterval: 180000,
+  const { data: biasData, isLoading: biasLoading, error: biasError } = 
+    useSWR(`${BACKEND_URL}/premium/bias`, fetcher, {
+      refreshInterval: 180000, // 3 minutes
       fallbackData: { biases: [] },
       revalidateOnFocus: false,
       onError: (error) => {
         console.warn('Bias fetch failed, using fallback data:', error);
       }
     });
+
+  console.log("Pattern Data:", patternData);
+  console.log("Bias Data:", biasData);
 
   return (
     <section className="market-analysis-section" id="market-analysis">
@@ -1139,8 +1144,9 @@ const LiveMarketAnalysis = ({ marketData }) => {
       
       <div className="analysis-container">
         <div className="analysis-highlights">
-          <PatternHighlightBox patterns={patternData} loading={patternLoading} />
-          <BiasHighlightBox biases={biasData} loading={biasLoading} />
+          {/* FIXED: Pass correct data to components */}
+          <PatternHighlightBox patterns={patternData || { patterns: [] }} loading={patternLoading} />
+          <BiasHighlightBox biases={biasData || { biases: [] }} loading={biasLoading} />
           <HistoryPanel />
         </div>
         
@@ -1454,6 +1460,8 @@ export default function Home() {
           href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
           rel="stylesheet"
         />
+        {/* FIXED: Added key prop to avoid React warning */}
+        <meta key="charset" charSet="utf-8" />
       </Head>
 
       <header className="header">
@@ -1553,7 +1561,7 @@ export default function Home() {
           </div>
         )}
         {result && <ResultTabs result={result} />}
-        <RecentHistory />
+        {/* <RecentHistory /> */}
       </main>
 
       <LiveMarketAnalysis marketData={marketData} />
@@ -3706,6 +3714,7 @@ export default function Home() {
             padding: 0;
             margin: 1rem 0;
           }
+          
           .wizard, .result-tabs, .history-section, .premium-section {
             padding: 1.5rem;
             margin: 0 0.5rem;
