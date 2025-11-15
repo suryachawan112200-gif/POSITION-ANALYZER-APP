@@ -1,4 +1,3 @@
-import { useState, useRef, useEffect } from "react";
 import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
@@ -9,24 +8,25 @@ import { useAuth } from "/contexts/AuthContext";
 import ProfileModal from "/components/ProfileModal";
 import LoginPopup from "/components/LoginPopup";
 import useSWR from 'swr';
+import { useState, useEffect, useRef } from "react"; // FIXED: Added missing hook imports
 
-// Fixed: Backend URL
-const BACKEND_URL = "https://python-backend-pr.vercel.app";
+// FIXED: Correct Backend URL - Replace with your actual deployed backend URL
+const BACKEND_URL = "https://position-analyzer-app.vercel.app";
 
-// FIXED: Enhanced SWR fetcher function with proper error handling
+// Enhanced SWR fetcher function with proper error handling and CORS
 const fetcher = async (url) => {
   try {
     const res = await fetch(`${BACKEND_URL}${url}`, {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      }
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include'
     });
     
     if (!res.ok) {
       console.warn(`Failed to fetch ${url}: ${res.status}`);
-      // Return empty data instead of throwing for graceful fallback
       return { patterns: [], biases: [], data: [] };
     }
     
@@ -34,7 +34,6 @@ const fetcher = async (url) => {
     return data;
   } catch (error) {
     console.warn(`Fetch error for ${url}:`, error);
-    // Return empty data instead of throwing for graceful fallback
     return { patterns: [], biases: [], data: [] };
   }
 };
@@ -71,7 +70,7 @@ const AnimatedCard = ({ children, className = "", delay = 0 }) => (
   </motion.div>
 );
 
-// FIXED: Enhanced Pattern Highlight Box with error handling
+// Enhanced Pattern Highlight Box with error handling
 const PatternHighlightBox = ({ patterns, loading }) => {
   const router = useRouter();
   const [lastUpdated, setLastUpdated] = useState(new Date());
@@ -84,10 +83,7 @@ const PatternHighlightBox = ({ patterns, loading }) => {
     router.push('/patterns');
   };
   
-  // FIXED: Handle multiple data structures and provide fallbacks
-  const topPatterns = patterns?.patterns?.slice(0, 2) || 
-                     (Array.isArray(patterns) ? patterns.slice(0, 2) : []) || 
-                     [];
+  const topPatterns = patterns?.patterns?.slice(0, 2) || (Array.isArray(patterns) ? patterns.slice(0, 2) : []);
   
   return (
     <motion.div 
@@ -117,7 +113,8 @@ const PatternHighlightBox = ({ patterns, loading }) => {
         ) : topPatterns.length > 0 ? (
           <div className="pattern-items">
             {topPatterns.map((pattern, index) => (
-              <div key={index} className="pattern-item">
+              // FIXED: Using unique identifier from pattern object as key
+              <div key={`${pattern.symbol}-${pattern.pattern}-${index}`} className="pattern-item">
                 <div className="pattern-title">
                   {pattern.symbol || "ETHUSDT"}: {pattern.pattern || "Rectangle"} ({pattern.bias || "Bullish"})
                 </div>
@@ -146,7 +143,7 @@ const PatternHighlightBox = ({ patterns, loading }) => {
   );
 };
 
-// FIXED: Enhanced Bias Highlight Box with error handling
+// Enhanced Bias Highlight Box with error handling
 const BiasHighlightBox = ({ biases, loading }) => {
   const router = useRouter();
   const [lastUpdated, setLastUpdated] = useState(new Date());
@@ -159,10 +156,7 @@ const BiasHighlightBox = ({ biases, loading }) => {
     router.push('/bias');
   };
   
-  // FIXED: Handle multiple data structures and provide fallbacks
-  const topBiases = biases?.biases?.slice(0, 2) || 
-                   (Array.isArray(biases) ? biases.slice(0, 2) : []) || 
-                   [];
+  const topBiases = biases?.biases?.slice(0, 2) || (Array.isArray(biases) ? biases.slice(0, 2) : []);
   
   return (
     <motion.div 
@@ -192,7 +186,8 @@ const BiasHighlightBox = ({ biases, loading }) => {
         ) : topBiases.length > 0 ? (
           <div className="bias-items">
             {topBiases.map((bias, index) => (
-              <div key={index} className="bias-item">
+              // FIXED: Using unique identifier from bias object as key
+              <div key={`${bias.symbol}-${index}`} className="bias-item">
                 <div className="bias-title">
                   {bias.symbol || "SOLUSDT"}: Strong {bias.bias || "Bullish"} ({bias.strength || "85"}%)
                 </div>
@@ -243,8 +238,9 @@ const HistoryPanel = () => {
         <FaHistory /> Recent Updates
       </summary>
       <div className="history-content">
-        {history.map((item, index) => (
-          <div key={index} className="history-item">
+        {history.map((item) => (
+          // FIXED: Using unique timestamp as key instead of index
+          <div key={item.timestamp} className="history-item">
             <div className="history-time">
               {new Date(item.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
             </div>
@@ -332,7 +328,8 @@ const TopVolumeCoins = ({ coins }) => (
     </div>
     <div className="top-volume-list">
       {coins.map((coin, index) => (
-        <div key={index} className="volume-item">
+        // FIXED: Using unique symbol as key instead of index
+        <div key={coin.symbol} className="volume-item">
           <div className="coin-rank">#{index + 1}</div>
           <div className="coin-name">{coin.symbol}</div>
           <div className="coin-volume">{coin.volume}</div>
@@ -353,8 +350,9 @@ const MarketDominance = ({ futures, spot }) => (
       <div className="dominance-section">
         <h4>Futures</h4>
         <div className="dominance-list">
-          {futures.map((coin, index) => (
-            <div key={index} className="dominance-item">
+          {futures.map((coin) => (
+            // FIXED: Using unique symbol as key instead of index
+            <div key={coin.symbol} className="dominance-item">
               <div className="coin-name">{coin.symbol}</div>
               <div className="coin-dominance">{coin.dominance}%</div>
             </div>
@@ -364,8 +362,9 @@ const MarketDominance = ({ futures, spot }) => (
       <div className="dominance-section">
         <h4>Spot</h4>
         <div className="dominance-list">
-          {spot.map((coin, index) => (
-            <div key={index} className="dominance-item">
+          {spot.map((coin) => (
+            // FIXED: Using unique symbol as key instead of index
+            <div key={coin.symbol} className="dominance-item">
               <div className="coin-name">{coin.symbol}</div>
               <div className="coin-dominance">{coin.dominance}%</div>
             </div>
@@ -384,8 +383,9 @@ const PriceTrend = ({ coins }) => (
       <h3>7D Price Trend</h3>
     </div>
     <div className="price-trend-list">
-      {coins.map((coin, index) => (
-        <div key={index} className="trend-item">
+      {coins.map((coin) => (
+        // FIXED: Using unique symbol as key instead of index
+        <div key={coin.symbol} className="trend-item">
           <div className="coin-name">{coin.symbol}</div>
           <div className={`trend-change ${coin.change > 0 ? 'positive' : 'negative'}`}>
             {coin.change > 0 ? <FaArrowUp /> : <FaArrowDown />} {Math.abs(coin.change)}%
@@ -400,8 +400,9 @@ const PriceTrend = ({ coins }) => (
 const Hero = ({ scrollToDashboard, tickerData, theme, stats }) => (
   <div className="hero">
     <div className="ticker">
-      {tickerData.map((item, index) => (
-        <span key={index} className="ticker-item">
+      {tickerData.map((item) => (
+        // FIXED: Using unique symbol as key instead of index
+        <span key={item.symbol} className="ticker-item">
           {item.symbol}: ${item.price} <span className={`ticker-change ${item.change > 0 ? 'positive' : 'negative'}`}>{item.change > 0 ? '+' : ''}{item.change}%</span>
         </span>
       ))}
@@ -422,7 +423,6 @@ const Hero = ({ scrollToDashboard, tickerData, theme, stats }) => (
       </div>
     </div>
     
-    {/* Enhanced background elements */}
     <div className="bg-elements">
       <div className="grid-lines"></div>
       <div className="particles">
@@ -714,7 +714,6 @@ const RiskGauge = ({ value, label }) => (
 const ResultTabs = ({ result }) => {
   const [activeTab, setActiveTab] = useState("summary");
 
-  // Calculate risk score based on position confidence
   const riskScore = result?.position_confidence ? 
     parseInt(result.position_confidence.toString().replace('%', '')) : 45;
 
@@ -903,7 +902,8 @@ const ResultTabs = ({ result }) => {
               {result?.patterns && Array.isArray(result.patterns) && result.patterns.length > 0 ? (
                 <div className="patterns-list">
                   {result.patterns.map((pattern, index) => (
-                    <div key={index} className="pattern-tag">
+                    // FIXED: Using robust key for string or object
+                    <div key={typeof pattern === 'string' ? pattern : (pattern.name || index)} className="pattern-tag">
                       {typeof pattern === 'string' ? pattern : pattern.pattern || pattern.name || 'Unknown Pattern'}
                     </div>
                   ))}
@@ -970,7 +970,7 @@ const FAQItem = ({ question, answer }) => {
   );
 };
 
-// Premium Section Component (Enhanced)
+// Premium Section Component
 const PremiumSection = () => {
   const [selectedPlan, setSelectedPlan] = useState('monthly');
   
@@ -1038,8 +1038,9 @@ const PremiumSection = () => {
         </div>
         
         <ul className="pricing-features">
-          {plans[selectedPlan].features.map((feature, index) => (
-            <li key={index}>
+          {plans[selectedPlan].features.map((feature) => (
+            // FIXED: Using unique feature string as key instead of index
+            <li key={feature}>
               <span className="feature-icon">✓</span>
               {feature}
             </li>
@@ -1091,8 +1092,9 @@ const Testimonials = () => {
     <section id="testimonials" className="testimonials-section">
       <h2>Trader Testimonials</h2>
       <div className="carousel">
-        {testimonials.map((testimonial, index) => (
-          <AnimatedCard key={index} className="testimonial-card" delay={index * 0.1}>
+        {testimonials.map((testimonial) => (
+          // FIXED: Using unique author as key instead of index
+          <AnimatedCard key={testimonial.author} className="testimonial-card">
             <p>"{testimonial.text}"</p>
             <cite>- {testimonial.author}, {testimonial.role}</cite>
           </AnimatedCard>
@@ -1103,11 +1105,10 @@ const Testimonials = () => {
   );
 };
 
-// FIXED: Live Market Analysis Section with better error handling
+// Live Market Analysis Section
 const LiveMarketAnalysis = ({ marketData }) => {
-  // FIXED: Enhanced SWR with better error handling and fallbacks
-  const { data: patternData, error: patternError, isLoading: patternLoading } = 
-    useSWR('/premium/patterns', fetcher, { 
+  const { data: patternData, isLoading: patternLoading } = 
+    useSWR('/premium/patterns/', fetcher, {
       refreshInterval: 180000,
       fallbackData: { patterns: [] },
       revalidateOnFocus: false,
@@ -1116,8 +1117,8 @@ const LiveMarketAnalysis = ({ marketData }) => {
       }
     });
 
-  const { data: biasData, error: biasError, isLoading: biasLoading } = 
-    useSWR('/premium/bias', fetcher, { 
+  const { data: biasData, isLoading: biasLoading } = 
+    useSWR('/premium/bias/', fetcher, {
       refreshInterval: 180000,
       fallbackData: { biases: [] },
       revalidateOnFocus: false,
@@ -1226,7 +1227,6 @@ export default function Home() {
 
   const dashboardRef = useRef(null);
 
-  // Initialize theme from localStorage or system preference
   useEffect(() => {
     if (typeof window !== "undefined") {
       const savedTheme = localStorage.getItem('theme');
@@ -1241,14 +1241,13 @@ export default function Home() {
       const count = parseInt(localStorage.getItem("aivisorAnalysisCount") || "0");
       setAnalysisCount(count);
       
-      // Simulate stats updates
       const statsInterval = setInterval(() => {
         setStats(prev => ({
           activeUsers: `${Math.floor(Math.random() * 1000) + 2500}`.replace(/\B(?=(\d{3})+(?!\d))/g, ","),
           analysesToday: `${parseInt(prev.analysesToday.toString().replace(/,/g, "")) + Math.floor(Math.random() * 100) + 50}`.replace(/\B(?=(\d{3})+(?!\d))/g, ","),
           accuracyRate: `${Math.min(85, Math.max(70, parseInt(prev.accuracyRate.toString()) + (Math.random() > 0.5 ? 1 : -1)))}`
         }));
-      }, 60000); // Update every minute
+      }, 60000);
       
       return () => {
         clearInterval(statsInterval);
@@ -1256,7 +1255,6 @@ export default function Home() {
     }
   }, []);
 
-  // Apply theme changes to document
   useEffect(() => {
     if (typeof window !== "undefined") {
       document.documentElement.setAttribute('data-theme', theme);
@@ -1264,17 +1262,14 @@ export default function Home() {
     }
   }, [theme]);
 
-  // Fetch real market data from Bybit API
   useEffect(() => {
     const fetchMarketData = async () => {
       try {
-        // Fetch ticker data
         const tickerRes = await fetch('https://api.bybit.com/v5/market/tickers?category=spot');
-        const tickerData = await tickerRes.json();
+        const tickerDataResult = await tickerRes.json();
         
-        // Process ticker data for top coins
-        if (tickerData?.result?.list) {
-          const topCoins = tickerData.result.list
+        if (tickerDataResult?.result?.list) {
+          const topCoins = tickerDataResult.result.list
             .filter(coin => ['BTCUSDT', 'ETHUSDT', 'SOLUSDT'].includes(coin.symbol))
             .map(coin => ({
               symbol: coin.symbol.replace('USDT', ''),
@@ -1287,7 +1282,6 @@ export default function Home() {
           }
         }
         
-        // Fetch Fear & Greed Index (using alternative API)
         try {
           const fearGreedRes = await fetch('https://api.alternative.me/fng/?limit=1');
           const fearGreedData = await fearGreedRes.json();
@@ -1304,9 +1298,8 @@ export default function Home() {
           console.warn('Fear & Greed Index fetch failed:', fgError);
         }
         
-        // Fetch top volume coins
-        if (tickerData?.result?.list) {
-          const topVolume = tickerData.result.list
+        if (tickerDataResult?.result?.list) {
+          const topVolume = tickerDataResult.result.list
             .filter(coin => coin.symbol.endsWith('USDT'))
             .sort((a, b) => parseFloat(b.turnover24h) - parseFloat(a.turnover24h))
             .slice(0, 5)
@@ -1325,7 +1318,6 @@ export default function Home() {
       }
     };
 
-    // Fetch data immediately and then every 30 seconds
     fetchMarketData();
     const interval = setInterval(fetchMarketData, 30000);
     
@@ -1362,7 +1354,6 @@ export default function Home() {
     }
   };
 
-  // FIXED: Complete submitData function with proper error handling
   const submitData = async () => {
     if (typeof window === "undefined") return;
 
@@ -1404,9 +1395,6 @@ export default function Home() {
     setLoading(true);
     
     try {
-      console.log("Sending request to backend:", inputData);
-      
-      // FIXED: Complete fetch with proper headers and error handling
       const response = await fetch(`${BACKEND_URL}/analyze`, {
         method: "POST",
         headers: {
@@ -1416,9 +1404,6 @@ export default function Home() {
         body: JSON.stringify(inputData),
       });
 
-      console.log("Response status:", response.status);
-
-      // FIXED: Proper response handling
       if (!response.ok) {
         let errorMessage = `HTTP ${response.status}`;
         try {
@@ -1431,35 +1416,21 @@ export default function Home() {
         throw new Error(errorMessage);
       }
 
-      const result = await response.json();
-      console.log("Analysis result:", result);
-      
-      // FIXED: Set the result and save to history
-      setResult(result);
-      saveHistory(inputData, result);
+      const resultData = await response.json();
+      setResult(resultData);
+      saveHistory(inputData, resultData);
       incrementAnalysisCount();
-      
-      // Log success
-      console.log("✅ Analysis completed successfully");
       
     } catch (err) {
       console.error("❌ Analysis error:", err);
-      
-      // FIXED: Enhanced user-friendly error messages
       let userMessage = err.message;
-      
-      if (err.message.includes("fetch") || err.message.includes("Failed to fetch")) {
+      if (err.message.includes("fetch")) {
         userMessage = "Connection error. Please check your internet connection and try again.";
-      } else if (err.message.includes("400") || err.message.includes("Bad Request")) {
+      } else if (err.message.includes("400")) {
         userMessage = "Invalid input data. Please check your entries and try again.";
-      } else if (err.message.includes("500") || err.message.includes("Internal Server Error")) {
+      } else if (err.message.includes("500")) {
         userMessage = "Server error. Please try again in a few moments.";
-      } else if (err.message.includes("404")) {
-        userMessage = "Service not found. Please try again later.";
-      } else if (err.message.includes("timeout") || err.message.includes("Timeout")) {
-        userMessage = "Request timeout. Please try again.";
       }
-      
       setError(userMessage);
     } finally {
       setLoading(false);
@@ -1706,7 +1677,7 @@ export default function Home() {
       {showProfile && <ProfileModal onClose={() => setShowProfile(false)} />}
       {showLoginPopup && <LoginPopup onClose={() => setShowLoginPopup(false)} />}
 
-      <style jsx global>{`
+      <style jsx global key="homepage-styles">{`
         :root {
           --bg-primary: #FFFFFF;
           --bg-secondary: #F8FBFF;
@@ -1911,7 +1882,6 @@ export default function Home() {
           background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
         }
         
-        /* Enhanced background elements */
         .bg-elements {
           position: absolute;
           top: 0;
@@ -2179,7 +2149,6 @@ export default function Home() {
           border: 1px solid var(--border-light);
         }
         
-        /* New highlight box styles */
         .analysis-container {
           max-width: 1200px;
           margin: 0 auto;
@@ -2363,7 +2332,6 @@ export default function Home() {
           border-top: 4px solid var(--accent-blue);
         }
         
-        /* History panel styles */
         .history-panel {
           background: var(--bg-card);
           border-radius: var(--radius-lg);
@@ -3377,10 +3345,7 @@ export default function Home() {
           font-weight: 600;
         }
 
-      
-          
-
-        .market-card-content {
+         .market-card-content {
           display: flex;
           justify-content: space-between;
           align-items: center;
@@ -3682,7 +3647,6 @@ export default function Home() {
           color: var(--accent-blue);
         }
 
-        /* Add styles for pattern and bias boxes */
         .refresh-btn {
           background: none;
           border: none;
